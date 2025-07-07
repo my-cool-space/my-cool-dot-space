@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # Add your environment variables here
+      # - APPWRITE_ENDPOINT=https://your-appwrite-endpoint
+      # - APPWRITE_PROJECT_ID=your-project-id
+      # - APPWRITE_DATABASE_ID=your-database-id
+      # - APPWRITE_COLLECTION_ID=your-collection-id
+      # - APPWRITE_API_KEY=your-api-key
+      # - DISCORD_CLIENT_ID=your-discord-client-id
+      # - DISCORD_CLIENT_SECRET=your-discord-client-secret
+      # - SESSION_SECRET=your-session-secret
+      # - PORKBUN_API_KEY=your-porkbun-api-key
+      # - PORKBUN_SECRET_KEY=your-porkbun-secret-key
+    env_file:
+      - .env  # Load environment variables from .env file
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/status', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Uncomment the following lines if you want to mount volumes for development
+    # volumes:
+    #   - ./:/app
+    #   - /app/node_modules
+
+  # Optional: Add a reverse proxy with SSL
+  # nginx:
+  #   image: nginx:alpine
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/ssl:ro
+  #   depends_on:
+  #     - app
+  #   restart: unless-stopped

@@ -1,0 +1,2075 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="" />
+    <link
+      rel="stylesheet"
+      as="style"
+      onload="this.rel='stylesheet'"
+      href="https://fonts.googleapis.com/css2?display=swap&amp;family=Inter%3Awght%40400%3B500%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900"
+    />
+    <title><%= title %></title>
+    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script type="module" src="/discord-auth.js"></script>
+</head>
+<body>
+    <div class="relative flex size-full min-h-screen flex-col bg-[#f9f8fc] group/design-root overflow-x-hidden" style='font-family: Inter, "Noto Sans", sans-serif;'>
+        <div class="layout-container flex h-full grow flex-col">
+            <!-- Header -->
+            <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#eae7f3] px-10 py-3">
+                <div class="flex items-center gap-4 text-[#110e1b]">
+                    <h2 class="text-[#110e1b] text-lg font-bold leading-tight tracking-[-0.015em]">my-cool.space</h2>
+                    <div class="text-[#604e97] text-sm font-medium px-2 py-1 bg-red-100 text-red-800 rounded-md">ADMIN</div>
+                </div>
+                <div class="flex flex-1 justify-end gap-8">
+                    <div class="flex items-center gap-9"></div>
+                    <div class="flex gap-2">
+                        <a href="/" 
+                           class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-[#eae7f3] text-[#110e1b] gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
+                            <span class="truncate">Home</span>
+                        </a>
+                        <a href="/dashboard"
+                           class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-[#eae7f3] text-[#110e1b] gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
+                            <span class="truncate">Dashboard</span>
+                        </a>
+                        <a href="/report-abuse" 
+                           class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-[#eae7f3] text-[#110e1b] gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
+                            <span class="truncate">Report Abuse</span>
+                        </a>
+                        <button
+                            onclick="loadRequests()"
+                            class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-[#4c19e5] text-[#f9f8fc] gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5"
+                        >
+                            <span class="truncate">Refresh</span>
+                        </button>
+                        <button
+                            onclick="logoutDiscord()"
+                            class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-[#eae7f3] text-[#110e1b] gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5"
+                        >
+                            <span class="truncate">Logout</span>
+                        </button>
+                        <div class="text-sm text-[#604e97] flex items-center">
+                            Hello, <span class="font-medium text-[#110e1b] user-name">Admin</span>!
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <div class="px-10 flex flex-1 justify-center py-5">
+                <div class="layout-content-container flex flex-col max-w-[1200px] flex-1">
+                    <div class="flex flex-wrap justify-between gap-3 p-4">
+                        <div class="flex min-w-72 flex-col gap-3">
+                            <p class="text-[#110e1b] tracking-light text-[32px] font-bold leading-tight">Admin Panel</p>
+                            <p class="text-[#604e97] text-sm font-normal leading-normal">Manage subdomain requests and DNS records.</p>
+                        </div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="flex border-b border-[#d6d0e7] px-4">
+                        <button 
+                            id="subdomainsTab" 
+                            class="tab-button px-4 py-2 border-b-2 border-[#4c19e5] text-[#4c19e5] font-medium text-sm transition-all duration-200 hover:bg-gray-50 active:scale-95"
+                            onclick="switchTab('subdomains')"
+                        >
+                            Subdomains
+                        </button>
+                        <button 
+                            id="abuseReportsTab" 
+                            class="tab-button px-4 py-2 border-b-2 border-transparent text-[#604e97] font-medium text-sm ml-4 transition-all duration-200 hover:bg-gray-50 active:scale-95"
+                            onclick="switchTab('abuseReports')"
+                        >
+                            Abuse Reports
+                        </button>
+                        <button 
+                            id="usersTab" 
+                            class="tab-button px-4 py-2 border-b-2 border-transparent text-[#604e97] font-medium text-sm ml-4 transition-all duration-200 hover:bg-gray-50 active:scale-95"
+                            onclick="switchTab('users')"
+                        >
+                            Users
+                        </button>
+                        <button 
+                            id="deletionRequestsTab" 
+                            class="tab-button px-4 py-2 border-b-2 border-transparent text-[#604e97] font-medium text-sm ml-4 transition-all duration-200 hover:bg-gray-50 active:scale-95"
+                            onclick="switchTab('deletionRequests')"
+                        >
+                            Data Deletion
+                        </button>
+                        <button 
+                            id="logsTab" 
+                            class="tab-button px-4 py-2 border-b-2 border-transparent text-[#604e97] font-medium text-sm ml-4 transition-all duration-200 hover:bg-gray-50 active:scale-95"
+                            onclick="switchTab('logs')"
+                        >
+                            Logs
+                        </button>
+                        <button 
+                            id="settingsTab" 
+                            class="tab-button px-4 py-2 border-b-2 border-transparent text-[#604e97] font-medium text-sm ml-4 transition-all duration-200 hover:bg-gray-50 active:scale-95"
+                            onclick="switchTab('settings')"
+                        >
+                            Settings
+                        </button>
+                    </div>
+
+                    <!-- Subdomain Management Tab -->
+                    <div id="subdomainsContent" class="tab-content" style="display: block;">
+                        <!-- Quick Stats -->
+                        <div class="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3 p-4">
+                            <div class="flex flex-1 gap-3 rounded-lg border border-[#d6d0e7] bg-yellow-50 p-4 flex-col">
+                                <div class="text-yellow-600" data-icon="Clock" data-size="24px" data-weight="regular">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
+                                        <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm64-88a8,8,0,0,1-8,8H128a8,8,0,0,1-8-8V72a8,8,0,0,1,16,0v48h48A8,8,0,0,1,192,128Z"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <h2 id="pendingCount" class="text-yellow-900 text-base font-bold leading-tight">-</h2>
+                                    <p class="text-yellow-800 text-sm font-normal leading-normal">Pending Requests</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-1 gap-3 rounded-lg border border-[#d6d0e7] bg-green-50 p-4 flex-col">
+                            <div class="text-green-600" data-icon="CheckCircle" data-size="24px" data-weight="regular">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
+                                    <path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <h2 id="approvedCount" class="text-green-900 text-base font-bold leading-tight">-</h2>
+                                <p class="text-green-800 text-sm font-normal leading-normal">Approved Requests</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-1 gap-3 rounded-lg border border-[#d6d0e7] bg-red-50 p-4 flex-col">
+                            <div class="text-red-600" data-icon="XCircle" data-size="24px" data-weight="regular">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
+                                    <path d="M165.66,101.66,139.31,128l26.35,26.34a8,8,0,0,1-11.32,11.32L128,139.31l-26.34,26.35a8,8,0,0,1-11.32-11.32L116.69,128,90.34,101.66a8,8,0,0,1,11.32-11.32L128,116.69l26.34-26.35a8,8,0,0,1,11.32,11.32ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <h2 id="deniedCount" class="text-red-900 text-base font-bold leading-tight">-</h2>
+                                <p class="text-red-800 text-sm font-normal leading-normal">Denied Requests</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-1 gap-3 rounded-lg border border-[#d6d0e7] bg-blue-50 p-4 flex-col">
+                            <div class="text-blue-600" data-icon="ChartBar" data-size="24px" data-weight="regular">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
+                                    <path d="M224,200h-8V40a8,8,0,0,0-8-8H152a8,8,0,0,0-8,8V80H96a8,8,0,0,0-8,8v40H48a8,8,0,0,0-8,8v64H32a8,8,0,0,0,0,16H224a8,8,0,0,0,0-16ZM160,48h40V200H160ZM104,96h40V200H104ZM56,144H88v56H56Z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <h2 id="totalCount" class="text-blue-900 text-base font-bold leading-tight">-</h2>
+                                <p class="text-blue-800 text-sm font-normal leading-normal">Total Requests</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter Controls -->
+                    <div class="flex flex-col gap-3 p-4">
+                        <!-- Search Bar -->
+                        <div class="flex gap-3 items-center">
+                            <div class="flex-1 relative">
+                                <input 
+                                    type="text" 
+                                    id="searchInput"
+                                    placeholder="Search by subdomain, user, or target URL..."
+                                    class="w-full px-4 py-2 pl-10 border border-[#d6d0e7] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4c19e5] focus:border-transparent"
+                                    onkeyup="searchRequests()"
+                                >
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <button onclick="clearSearch()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                                Clear
+                            </button>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="filterRequests('all')" 
+                                    class="filter-tab active flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-3 bg-[#4c19e5] text-[#f9f8fc] text-xs font-bold leading-normal tracking-[0.015em]">
+                                All Requests
+                            </button>
+                            <button onclick="filterRequests('pending')" 
+                                    class="filter-tab flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-3 bg-[#eae7f3] text-[#110e1b] text-xs font-bold leading-normal tracking-[0.015em]">
+                                Pending
+                            </button>
+                            <button onclick="filterRequests('approved')" 
+                                    class="filter-tab flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-3 bg-[#eae7f3] text-[#110e1b] text-xs font-bold leading-normal tracking-[0.015em]">
+                                Approved
+                            </button>
+                            <button onclick="filterRequests('denied')" 
+                                    class="filter-tab flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-3 bg-[#eae7f3] text-[#110e1b] text-xs font-bold leading-normal tracking-[0.015em]">
+                                Denied
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Requests List -->
+                    <div class="flex flex-col gap-3 p-4">
+                        <h2 class="text-[#110e1b] text-[22px] font-bold leading-tight tracking-[-0.015em]">Subdomain Requests</h2>
+                        <div id="requestsList">
+                            <div class="flex flex-col items-center justify-center rounded-lg border border-[#d6d0e7] bg-[#f9f8fc] p-8">
+                                <div class="text-[#604e97] mb-4" data-icon="ArrowPath" data-size="48px" data-weight="regular">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="48px" height="48px" fill="currentColor" viewBox="0 0 256 256" class="animate-spin">
+                                        <path d="M197.67,186.37a8,8,0,0,1,0,11.29C196.58,198.73,170.82,224,128,224c-37.39,0-64.53-22.4-80-39.85V208a8,8,0,0,1-16,0V160a8,8,0,0,1,8-8H88a8,8,0,0,1,0,16H55.44C67.76,183.35,93,208,128,208c36.72,0,58.4-21.31,58.37-21.34A8,8,0,0,1,197.67,186.37ZM216,40a8,8,0,0,0-8,8V71.85C192.53,54.4,165.39,32,128,32,85.18,32,59.42,57.27,58.33,58.34a8,8,0,0,0,11.34,11.32C69.6,69.69,91.28,48,128,48c35,0,60.24,24.65,72.56,40H168a8,8,0,0,0,0,16h48a8,8,0,0,0,8-8V48A8,8,0,0,0,216,40Z"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-[#604e97] text-base font-normal leading-normal text-center">
+                                    Loading requests...
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    </div> <!-- End subdomain content -->
+
+                    <!-- Abuse Reports Tab -->
+                    <div id="abuseReportsContent" class="tab-content" style="display: none;">
+                        <!-- Abuse Reports Stats -->
+                        <div class="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3 p-4">
+                            <div class="flex flex-1 gap-3 rounded-lg border border-[#d6d0e7] bg-red-50 p-4 flex-col">
+                                <div class="text-red-600" data-icon="Warning" data-size="24px" data-weight="regular">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
+                                        <path d="M236.8,188.09,149.35,36.22h0a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.35,24.35,0,0,0,40.55,224h174.9a24.35,24.35,0,0,0,21.33-12.19A23.51,23.51,0,0,0,236.8,188.09ZM224.66,204.8a8.5,8.5,0,0,1-9.21,4.2H40.55a8.5,8.5,0,0,1-9.21-4.2,7.59,7.59,0,0,1,0-7.72L118.8,45.15a8.75,8.75,0,0,1,14.4,0l87.46,151.93A7.59,7.59,0,0,1,224.66,204.8ZM120,104v40a8,8,0,0,0,16,0V104a8,8,0,0,0-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,140Z"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <h2 id="pendingAbuseCount" class="text-red-900 text-base font-bold leading-tight">-</h2>
+                                    <p class="text-red-800 text-sm font-normal leading-normal">Pending Reports</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-1 gap-3 rounded-lg border border-[#d6d0e7] bg-green-50 p-4 flex-col">
+                                <div class="text-green-600" data-icon="CheckCircle" data-size="24px" data-weight="regular">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
+                                        <path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <h2 id="resolvedAbuseCount" class="text-green-900 text-base font-bold leading-tight">-</h2>
+                                    <p class="text-green-800 text-sm font-normal leading-normal">Resolved Reports</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-1 gap-3 rounded-lg border border-[#d6d0e7] bg-gray-50 p-4 flex-col">
+                                <div class="text-gray-600" data-icon="X" data-size="24px" data-weight="regular">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
+                                        <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <h2 id="dismissedAbuseCount" class="text-gray-900 text-base font-bold leading-tight">-</h2>
+                                    <p class="text-gray-800 text-sm font-normal leading-normal">Dismissed Reports</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Abuse Reports Filter -->
+                        <div class="flex gap-3 p-4">
+                            <button onclick="filterAbuseReports('all')" 
+                                    id="abuseFilterAll" 
+                                    class="abuse-filter-btn flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#4c19e5] text-[#f9f8fc] text-sm font-bold leading-normal tracking-[0.015em]">
+                                <span class="truncate">All</span>
+                            </button>
+                            <button onclick="filterAbuseReports('pending')" 
+                                    id="abuseFilterPending" 
+                                    class="abuse-filter-btn flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#eae7f3] text-[#110e1b] text-sm font-bold leading-normal tracking-[0.015em]">
+                                <span class="truncate">Pending</span>
+                            </button>
+                            <button onclick="filterAbuseReports('resolved')" 
+                                    id="abuseFilterResolved" 
+                                    class="abuse-filter-btn flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#eae7f3] text-[#110e1b] text-sm font-bold leading-normal tracking-[0.015em]">
+                                <span class="truncate">Resolved</span>
+                            </button>
+                            <button onclick="filterAbuseReports('dismissed')" 
+                                    id="abuseFilterDismissed" 
+                                    class="abuse-filter-btn flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#eae7f3] text-[#110e1b] text-sm font-bold leading-normal tracking-[0.015em]">
+                                <span class="truncate">Dismissed</span>
+                            </button>
+                        </div>
+
+                        <!-- Abuse Reports List -->
+                        <div class="flex flex-col gap-3 p-4">
+                            <h2 class="text-[#110e1b] text-[22px] font-bold leading-tight tracking-[-0.015em]">Abuse Reports</h2>
+                            <div id="abuseReportsList">
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subdomain & Type</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reporter & Date</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin Notes</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="abuse-reports-tbody">
+                                            <tr>
+                                                <td colspan="6" class="text-center py-8">
+                                                    <div class="text-[#604e97] mb-4 flex justify-center">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="48px" height="48px" fill="currentColor" viewBox="0 0 256 256" class="animate-spin">
+                                                            <path d="M197.67,186.37a8,8,0,0,1,0,11.29C196.58,198.73,170.82,224,128,224c-37.39,0-64.53-22.4-80-39.85V208a8,8,0,0,1-16,0V160a8,8,0,0,1,8-8H88a8,8,0,0,1,0,16H55.44C67.76,183.35,93,208,128,208c36.72,0,58.4-21.31,58.37-21.34A8,8,0,0,1,197.67,186.37ZM216,40a8,8,0,0,0-8,8V71.85C192.53,54.4,165.39,32,128,32,85.18,32,59.42,57.27,58.33,58.34a8,8,0,0,0,11.34,11.32C69.6,69.69,91.28,48,128,48c35,0,60.24,24.65,72.56,40H168a8,8,0,0,0,0,16h48a8,8,0,0,0,8-8V48A8,8,0,0,0,216,40Z"></path>
+                                                        </svg>
+                                                    </div>
+                                                    <p class="text-[#604e97] text-base font-normal leading-normal">Loading abuse reports...</p>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- End abuse reports content -->
+
+                    <!-- Users Tab -->
+                    <div id="usersContent" class="tab-content" style="display: none;">
+                        <!-- Users Stats -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-4">
+                            <div class="bg-blue-50 rounded-lg p-4">
+                                <h3 class="text-blue-800 text-lg font-bold">Total Users</h3>
+                                <p class="text-blue-600 text-2xl font-bold" id="total-users">0</p>
+                            </div>
+                            <div class="bg-green-50 rounded-lg p-4">
+                                <h3 class="text-green-800 text-lg font-bold">Active Users</h3>
+                                <p class="text-green-600 text-2xl font-bold" id="active-users">0</p>
+                            </div>
+                            <div class="bg-red-50 rounded-lg p-4">
+                                <h3 class="text-red-800 text-lg font-bold">Suspended Users</h3>
+                                <p class="text-red-600 text-2xl font-bold" id="suspended-users">0</p>
+                            </div>
+                            <div class="bg-yellow-50 rounded-lg p-4">
+                                <h3 class="text-yellow-800 text-lg font-bold">Users with Deletion Requests</h3>
+                                <p class="text-yellow-600 text-2xl font-bold" id="deletion-requests">0</p>
+                            </div>
+                        </div>
+
+                        <!-- Users List -->
+                        <div class="flex flex-col gap-3 p-4">
+                            <!-- Search Bar -->
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <h2 class="text-[#110e1b] text-[22px] font-bold leading-tight tracking-[-0.015em]">Users</h2>
+                                <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                                    <div class="relative">
+                                        <input 
+                                            type="text" 
+                                            id="userSearchInput" 
+                                            placeholder="Search by username, email, Discord ID, or subdomain..." 
+                                            class="px-4 py-2 w-full sm:w-80 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            onkeyup="debounceUserSearch(this.value)"
+                                        />
+                                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onclick="clearUserSearch()" 
+                                        class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                                        title="Clear search"
+                                    >
+                                        Clear
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Search Results Info -->
+                            <div id="searchResultsInfo" class="hidden">
+                                <p class="text-sm text-gray-600">
+                                    <span id="searchResultsText"></span>
+                                    <button onclick="clearUserSearch()" class="text-blue-600 hover:text-blue-800 underline ml-2">Show all users</button>
+                                </p>
+                            </div>
+                            
+                            <div id="usersList">
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subdomains</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="users-tbody">
+                                            <tr>
+                                                <td colspan="6" class="text-center py-8">
+                                                    <p class="text-[#604e97] text-base font-normal leading-normal">Loading users...</p>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- End users content -->
+
+                    <!-- Data Deletion Requests Tab -->
+                    <div id="deletionRequestsContent" class="tab-content" style="display: none;">
+                        <!-- Data Deletion Stats -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-4">
+                            <div class="bg-yellow-50 rounded-lg p-4">
+                                <h3 class="text-yellow-800 text-lg font-bold">Pending Requests</h3>
+                                <p class="text-yellow-600 text-2xl font-bold" id="pending-deletion-requests">0</p>
+                            </div>
+                            <div class="bg-green-50 rounded-lg p-4">
+                                <h3 class="text-green-800 text-lg font-bold">Approved Requests</h3>
+                                <p class="text-green-600 text-2xl font-bold" id="approved-deletion-requests">0</p>
+                            </div>
+                            <div class="bg-red-50 rounded-lg p-4">
+                                <h3 class="text-red-800 text-lg font-bold">Denied Requests</h3>
+                                <p class="text-red-600 text-2xl font-bold" id="denied-deletion-requests">0</p>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h3 class="text-gray-800 text-lg font-bold">Cancelled Requests</h3>
+                                <p class="text-gray-600 text-2xl font-bold" id="cancelled-deletion-requests">0</p>
+                            </div>
+                        </div>
+
+                        <!-- Data Deletion Requests List -->
+                        <div class="flex flex-col gap-3 p-4">
+                            <h2 class="text-[#110e1b] text-[22px] font-bold leading-tight tracking-[-0.015em]">Data Deletion Requests</h2>
+                            <p class="text-[#604e97]">Manage user data deletion requests. Users can request data deletion at <code class="bg-[#f9f8fc] px-1 py-0.5 rounded">/deletion</code>.</p>
+                            
+                            <div id="deletionRequestsList">
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Date</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time Pending</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="deletion-requests-tbody">
+                                            <tr>
+                                                <td colspan="6" class="text-center py-8">
+                                                    <p class="text-[#604e97] text-base font-normal leading-normal">Loading deletion requests...</p>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- End data deletion requests content -->
+
+                    <!-- Logs Tab -->
+                    <div id="logsContent" class="tab-content" style="display: none;">
+                        <!-- Logs Filters -->
+                        <div class="flex gap-3 p-4">
+                            <select id="logTypeFilter" class="px-3 py-2 border border-[#d6d0e7] rounded-lg" onchange="filterLogs()">
+                                <option value="all">All Log Types</option>
+                                <option value="admin">Admin Actions</option>
+                                <option value="user">User Actions</option>
+                                <option value="system">System Events</option>
+                                <option value="error">Errors</option>
+                            </select>
+                            <select id="logUserFilter" class="px-3 py-2 border border-[#d6d0e7] rounded-lg" onchange="filterLogs()">
+                                <option value="all">All Users</option>
+                            </select>
+                            <input 
+                                type="date" 
+                                id="logDateFrom" 
+                                class="px-3 py-2 border border-[#d6d0e7] rounded-lg" 
+                                onchange="filterLogs()"
+                                title="From Date"
+                            >
+                            <input 
+                                type="date" 
+                                id="logDateTo" 
+                                class="px-3 py-2 border border-[#d6d0e7] rounded-lg" 
+                                onchange="filterLogs()"
+                                title="To Date"
+                            >
+                            <button onclick="exportLogs()" class="px-4 py-2 bg-[#4c19e5] text-white rounded-lg hover:bg-[#3d14b8] transition-colors">
+                                Export Logs
+                            </button>
+                        </div>
+
+                        <!-- Logs List -->
+                        <div class="flex flex-col gap-3 p-4">
+                            <h2 class="text-[#110e1b] text-[22px] font-bold leading-tight tracking-[-0.015em]">System Logs</h2>
+                            <div id="logsList">
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="logs-tbody">
+                                            <tr>
+                                                <td colspan="6" class="text-center py-8">
+                                                    <p class="text-[#604e97] text-base font-normal leading-normal">Logs functionality coming soon...</p>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- End logs content -->
+
+                    <!-- Settings Tab -->
+                    <div id="settingsContent" class="tab-content" style="display: none;">
+                        <div class="flex flex-col gap-6 p-4">
+                            <h2 class="text-[#110e1b] text-[22px] font-bold leading-tight tracking-[-0.015em]">Settings</h2>
+                            
+                            <!-- System Settings -->
+                            <div class="bg-white border border-gray-200 rounded-lg p-6">
+                                <h3 class="text-lg font-bold text-gray-900 mb-4">System Settings</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Allow New Registrations</label>
+                                        <select class="w-full p-2 border border-gray-300 rounded-md">
+                                            <option value="true">Enabled</option>
+                                            <option value="false">Disabled</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Maintenance Mode</label>
+                                        <select id="maintenanceMode" class="w-full p-2 border border-gray-300 rounded-md" onchange="toggleMaintenanceMode()">
+                                            <option value="false">Disabled</option>
+                                            <option value="true">Enabled</option>
+                                        </select>
+                                        <p class="text-xs text-gray-500 mt-1">Enable to show maintenance page to all non-admin users</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Domain Name</label>
+                                        <input type="text" id="domainName" class="w-full p-2 border border-gray-300 rounded-md" value="my-cool.space">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Max Subdomains per User</label>
+                                        <input type="number" id="maxSubdomains" class="w-full p-2 border border-gray-300 rounded-md" value="5" min="1" max="100">
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="autoApprove" class="mr-2">
+                                        <span class="text-sm text-gray-700">Auto-approve subdomain requests</span>
+                                    </label>
+                                </div>
+                                <button onclick="saveSettings()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                                    Save Settings
+                                </button>
+                            </div>
+                        </div>
+                    </div> <!-- End settings content -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50" onclick="closeConfirmationModal()">
+        <div class="bg-white rounded-lg shadow-lg max-w-md w-full mx-4" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <h3 id="confirmationTitle" class="text-lg font-medium text-[#110e1b] mb-4">Confirm Action</h3>
+                <p id="confirmationMessage" class="text-[#604e97] mb-6">Are you sure you want to proceed?</p>
+                <div class="flex justify-end space-x-4">
+                    <button onclick="closeConfirmationModal()" 
+                            class="px-4 py-2 text-[#604e97] hover:text-[#110e1b] transition-colors">
+                        Cancel
+                    </button>
+                    <button id="confirmationConfirmBtn" 
+                            class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Prompt Modal -->
+    <div id="promptModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50" onclick="closePromptModal()">
+        <div class="bg-white rounded-lg shadow-lg max-w-md w-full mx-4" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <h3 id="promptTitle" class="text-lg font-medium text-[#110e1b] mb-4">Input Required</h3>
+                <p id="promptMessage" class="text-[#604e97] mb-4">Please enter your input:</p>
+                <input type="text" id="promptInput" 
+                       class="w-full px-3 py-2 border border-[#d6d0e7] rounded-md focus:outline-none focus:ring-2 focus:ring-[#4c19e5] mb-6">
+                <div class="flex justify-end space-x-4">
+                    <button onclick="closePromptModal()" 
+                            class="px-4 py-2 text-[#604e97] hover:text-[#110e1b] transition-colors">
+                        Cancel
+                    </button>
+                    <button id="promptConfirmBtn" 
+                            class="px-4 py-2 bg-[#4c19e5] text-white rounded-md hover:bg-[#3d14b8] transition-colors">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allRequests = [];
+        let filteredRequests = [];
+        let allAbuseReports = [];
+        let currentFilter = 'all';
+        let currentAbuseFilter = 'all';
+        let currentTab = 'subdomains';
+        let searchTerm = '';
+
+        // Tab switching functionality
+        function switchTab(tab) {
+            console.log('🔄 switchTab called with:', tab);
+            
+            // Add visual feedback - brief scale animation
+            const clickedButton = document.getElementById(tab + 'Tab');
+            if (clickedButton) {
+                clickedButton.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    clickedButton.style.transform = 'scale(1)';
+                }, 100);
+            }
+            
+            currentTab = tab;
+            
+            // Hide all tab contents
+            const allTabContents = document.querySelectorAll('.tab-content');
+            console.log('📋 Found tab contents:', allTabContents.length);
+            allTabContents.forEach(content => {
+                content.style.display = 'none';
+                console.log('🙈 Hiding:', content.id);
+            });
+            
+            // Show the selected tab content
+            const targetContent = document.getElementById(tab + 'Content');
+            if (targetContent) {
+                targetContent.style.display = 'block';
+                console.log('👁️ Showing content for tab:', tab + 'Content');
+            } else {
+                console.error('❌ Content not found for tab:', tab + 'Content');
+            }
+            
+            // Update tab button styles
+            const allTabButtons = document.querySelectorAll('.tab-button');
+            console.log('🔘 Found tab buttons:', allTabButtons.length);
+            allTabButtons.forEach(btn => {
+                btn.classList.remove('border-[#4c19e5]', 'text-[#4c19e5]');
+                btn.classList.add('border-transparent', 'text-[#604e97]');
+            });
+            
+            // Set active tab style
+            const activeTabBtn = document.getElementById(tab + 'Tab');
+            if (activeTabBtn) {
+                activeTabBtn.classList.remove('border-transparent', 'text-[#604e97]');
+                activeTabBtn.classList.add('border-[#4c19e5]', 'text-[#4c19e5]');
+                console.log('✅ Activated tab button:', tab + 'Tab');
+            } else {
+                console.error('❌ Tab button not found:', tab + 'Tab');
+            }
+            
+            // Load data for the active tab
+            console.log('📊 Loading data for tab:', tab);
+            if (tab === 'subdomains') {
+                loadRequests();
+            } else if (tab === 'abuseReports') {
+                loadAbuseReports();
+            } else if (tab === 'users') {
+                loadUsers();
+            } else if (tab === 'deletionRequests') {
+                loadDeletionRequests();
+            } else if (tab === 'logs') {
+                loadLogs();
+            } else if (tab === 'settings') {
+                loadSettings();
+            }
+        }
+
+        // Search functionality
+        function searchRequests() {
+            searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            filterRequests(currentFilter);
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            searchTerm = '';
+            filterRequests(currentFilter);
+        }
+
+        async function loadRequests() {
+            try {
+                const response = await fetch('/api/admin/requests', {
+                    credentials: 'include' // Include session cookies
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    allRequests = data.requests || [];
+                    updateStatistics();
+                    filterRequests(currentFilter);
+                } else {
+                    throw new Error(data.error || 'Failed to load requests');
+                }
+            } catch (error) {
+                console.error('Error loading requests:', error);
+                document.getElementById('requestsList').innerHTML = `
+                    <div class="flex flex-col items-center justify-center rounded-lg border border-[#d6d0e7] bg-red-50 p-8">
+                        <div class="text-red-600 mb-4" data-icon="XCircle" data-size="48px" data-weight="regular">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48px" height="48px" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M165.66,101.66,139.31,128l26.35,26.34a8,8,0,0,1-11.32,11.32L128,139.31l-26.34,26.35a8,8,0,0,1-11.32-11.32L116.69,128,90.34,101.66a8,8,0,0,1,11.32-11.32L128,116.69l26.34-26.35a8,8,0,0,1,11.32,11.32ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-red-600 text-base font-normal leading-normal text-center mb-4">
+                            Error loading requests: ${error.message}
+                        </p>
+                        <button onclick="loadRequests()" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#4c19e5] text-[#f9f8fc] text-sm font-bold leading-normal tracking-[0.015em]">
+                            Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function updateStatistics() {
+            const pending = allRequests.filter(r => r.status === 'pending').length;
+            const approved = allRequests.filter(r => r.status === 'approved').length;
+            const denied = allRequests.filter(r => r.status === 'denied').length;
+            const total = allRequests.length;
+
+            document.getElementById('pendingCount').textContent = pending;
+            document.getElementById('approvedCount').textContent = approved;
+            document.getElementById('deniedCount').textContent = denied;
+            document.getElementById('totalCount').textContent = total;
+        }
+
+        function filterRequests(status) {
+            currentFilter = status;
+            
+            // Update tab styles
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('bg-[#4c19e5]', 'text-[#f9f8fc]');
+                tab.classList.add('bg-[#eae7f3]', 'text-[#110e1b]');
+            });
+            
+            // Find and activate the correct tab
+            const activeTab = document.querySelector(`[onclick="filterRequests('${status}')"]`);
+            if (activeTab) {
+                activeTab.classList.add('bg-[#4c19e5]', 'text-[#f9f8fc]');
+                activeTab.classList.remove('bg-[#eae7f3]', 'text-[#110e1b]');
+            }
+
+            // Filter by status
+            let requestsToFilter = status === 'all' ? allRequests : allRequests.filter(r => r.status === status);
+            
+            // Apply search filter
+            if (searchTerm) {
+                requestsToFilter = requestsToFilter.filter(request => {
+                    // Extract record type and clean target URL for search
+                    let recordType = 'cname'; // Default to CNAME instead of redirect
+                    let displayUrl = request.target_url;
+                    
+                    if (request.target_url && request.target_url.startsWith('[') && request.target_url.includes(']')) {
+                        const match = request.target_url.match(/^\[([^\]]+)\](.+)$/);
+                        if (match) {
+                            recordType = match[1];
+                            displayUrl = match[2];
+                        }
+                    }
+                    
+                    return request.subdomain.toLowerCase().includes(searchTerm) ||
+                           displayUrl.toLowerCase().includes(searchTerm) ||
+                           request.discord_tag.toLowerCase().includes(searchTerm) ||
+                           request.user_id.toLowerCase().includes(searchTerm) ||
+                           recordType.toLowerCase().includes(searchTerm);
+                });
+            }
+            
+            filteredRequests = requestsToFilter;
+            renderRequests(filteredRequests);
+        }
+
+        function renderRequests(requestsToShow) {
+            const container = document.getElementById('requestsList');
+            
+            if (requestsToShow.length === 0) {
+                const noResultsMessage = searchTerm ? 
+                    `No requests found matching "${searchTerm}".` : 
+                    `No ${currentFilter === 'all' ? '' : currentFilter + ' '}requests found.`;
+                    
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center rounded-lg border border-[#d6d0e7] bg-[#f9f8fc] p-8">
+                        <div class="text-[#604e97] mb-4" data-icon="Inbox" data-size="48px" data-weight="regular">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48px" height="48px" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM96,152H160a8,8,0,0,1,8,8v16H88V160A8,8,0,0,1,96,152ZM48,48H208V136H173.33l-21.34,21.34a8,8,0,0,1-11.31,0L128,144.69l-12.68,12.65a8,8,0,0,1-11.31,0L82.67,136H48Z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-[#604e97] text-base font-normal leading-normal text-center">
+                            ${noResultsMessage}
+                        </p>
+                        ${searchTerm ? `<button onclick="clearSearch()" class="mt-4 px-4 py-2 bg-[#4c19e5] text-white rounded-lg hover:bg-[#3d14b8] transition-colors">Clear Search</button>` : ''}
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = requestsToShow.map(request => {
+                // Extract record type and clean target URL for display
+                let recordType = 'cname'; // Default to CNAME instead of redirect
+                let displayUrl = request.target_url;
+                
+                if (request.target_url && request.target_url.startsWith('[') && request.target_url.includes(']')) {
+                    const match = request.target_url.match(/^\[([^\]]+)\](.+)$/);
+                    if (match) {
+                        recordType = match[1];
+                        displayUrl = match[2];
+                    }
+                }
+                
+                return `
+                <div class="flex flex-col gap-4 rounded-lg border border-[#d6d0e7] bg-white p-6 mb-3">
+                    <div class="flex items-start justify-between">
+                        <div class="flex flex-1 flex-col gap-2">
+                            <div class="flex items-center gap-3">
+                                <p class="text-[#110e1b] text-lg font-bold leading-tight">
+                                    ${request.subdomain}.my-cool.space
+                                </p>
+                                <div class="flex items-center gap-2 rounded-full px-3 py-1 ${
+                                    request.status === 'approved' ? 'bg-green-100' :
+                                    request.status === 'denied' ? 'bg-red-100' : 'bg-yellow-100'
+                                }">
+                                    <span class="text-xs font-medium ${
+                                        request.status === 'approved' ? 'text-green-600' :
+                                        request.status === 'denied' ? 'text-red-600' : 'text-yellow-600'
+                                    }">
+                                        ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-1 text-sm text-[#604e97]">
+                                <p><span class="font-medium">Target:</span> <a href="${displayUrl}" target="_blank" class="text-[#4c19e5] hover:underline">${displayUrl}</a></p>
+                                <p><span class="font-medium">Record Type:</span> <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                    recordType === 'cname' ? 'bg-green-100 text-green-800' :
+                                    recordType === 'a' ? 'bg-purple-100 text-purple-800' :
+                                    'bg-blue-100 text-blue-800'
+                                }">${recordType.toUpperCase()}</span></p>
+                                <p><span class="font-medium">Requested by:</span> ${request.discord_tag || 'Unknown'}</p>
+                                <p><span class="font-medium">User ID:</span> <code class="bg-[#eae7f3] px-1 rounded text-xs">${request.user_id}</code></p>
+                                <p><span class="font-medium">Requested:</span> ${new Date(request.created_at).toLocaleString()}</p>
+                            </div>
+                        </div>
+                        
+                        ${request.status === 'pending' ? `
+                            <div class="flex gap-2 ml-4">
+                                <button 
+                                    onclick="approveRequest('${request.$id}')"
+                                    class="flex min-w-[70px] max-w-[120px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-3 bg-green-600 text-white text-xs font-bold leading-normal tracking-[0.015em] hover:bg-green-700"
+                                >
+                                    Approve
+                                </button>
+                                <button 
+                                    onclick="denyRequest('${request.$id}')"
+                                    class="flex min-w-[70px] max-w-[120px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-3 bg-red-600 text-white text-xs font-bold leading-normal tracking-[0.015em] hover:bg-red-700"
+                                >
+                                    Deny
+                                </button>
+                                <button 
+                                    onclick="deleteRequest('${request.$id}', '${request.subdomain}')"
+                                    class="flex min-w-[70px] max-w-[120px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-3 bg-gray-600 text-white text-xs font-bold leading-normal tracking-[0.015em] hover:bg-gray-700"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        ` : `
+                            <div class="flex gap-2 ml-4">
+                                ${request.status === 'approved' ? `
+                                    <button 
+                                        onclick="remakeRecord('${request.$id}', '${request.subdomain}')"
+                                        class="flex min-w-[70px] max-w-[120px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-3 bg-blue-600 text-white text-xs font-bold leading-normal tracking-[0.015em] hover:bg-blue-700"
+                                    >
+                                        Re-make Record
+                                    </button>
+                                ` : ''}
+                                <button 
+                                    onclick="deleteRequest('${request.$id}', '${request.subdomain}')"
+                                    class="flex min-w-[70px] max-w-[120px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-3 bg-gray-600 text-white text-xs font-bold leading-normal tracking-[0.015em] hover:bg-gray-700"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        `}
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        async function approveRequest(requestId) {
+            showConfirmation(
+                'Approve Subdomain Request',
+                'Are you sure you want to approve this subdomain request?',
+                async () => {
+                    try {
+                        const requestFunction = window.makeAuthenticatedRequest || fetch;
+                        const response = await requestFunction(`/api/admin/approve/${requestId}`, {
+                            method: 'POST',
+                            credentials: 'include'
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (response.ok) {
+                            showNotification('Request approved successfully! DNS record has been created.', 'success');
+                            loadRequests();
+                        } else {
+                            throw new Error(result.error || 'Failed to approve request');
+                        }
+                    } catch (error) {
+                        showNotification('Error approving request: ' + error.message, 'error');
+                    }
+                },
+                'Approve',
+                'green'
+            );
+        }
+
+        async function denyRequest(requestId) {
+            showConfirmation(
+                'Deny Subdomain Request',
+                'Are you sure you want to deny this subdomain request?',
+                async () => {
+                    try {
+                        const requestFunction = window.makeAuthenticatedRequest || fetch;
+                        const response = await requestFunction(`/api/admin/deny/${requestId}`, {
+                            method: 'POST',
+                            credentials: 'include'
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (response.ok) {
+                            showNotification('Request denied successfully.', 'success');
+                            loadRequests();
+                        } else {
+                            throw new Error(result.error || 'Failed to deny request');
+                        }
+                    } catch (error) {
+                        showNotification('Error denying request: ' + error.message, 'error');
+                    }
+                },
+                'Deny',
+                'red'
+            );
+        }
+
+        async function deleteRequest(requestId, subdomain) {
+            showConfirmation(
+                'Delete Subdomain Request',
+                `Are you sure you want to permanently delete the subdomain request for "${subdomain}.my-cool.space"?\n\nThis will:\n• Remove the request from the database\n• Delete the DNS record if it exists\n\nThis action cannot be undone.`,
+                async () => {
+                    try {
+                        const requestFunction = window.makeAuthenticatedRequest || fetch;
+                        const response = await requestFunction(`/api/admin/delete/${requestId}`, {
+                            method: 'DELETE',
+                            credentials: 'include'
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (response.ok) {
+                            showNotification(`Subdomain "${subdomain}.my-cool.space" has been permanently deleted.`, 'success');
+                            loadRequests();
+                        } else {
+                            throw new Error(result.error || 'Failed to delete request');
+                        }
+                    } catch (error) {
+                        showNotification('Error deleting request: ' + error.message, 'error');
+                    }
+                },
+                'Delete',
+                'red'
+            );
+        }
+
+        async function remakeRecord(requestId, subdomain) {
+            showConfirmation(
+                'Re-make DNS Record',
+                `Are you sure you want to re-create the DNS record for "${subdomain}.my-cool.space"?\n\nThis will:\n• Delete any existing DNS record for this subdomain\n• Create a new DNS record with the original settings\n\nThis is useful if the record was accidentally deleted or needs to be refreshed.`,
+                async () => {
+                    try {
+                        const requestFunction = window.makeAuthenticatedRequest || fetch;
+                        const response = await requestFunction(`/api/admin/remake/${requestId}`, {
+                            method: 'POST',
+                            credentials: 'include'
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (response.ok) {
+                            showNotification(`DNS record for "${subdomain}.my-cool.space" has been successfully re-created!`, 'success');
+                            loadRequests();
+                        } else {
+                            throw new Error(result.error || 'Failed to re-make DNS record');
+                        }
+                    } catch (error) {
+                        showNotification('Error re-making DNS record: ' + error.message, 'error');
+                    }
+                },
+                'Re-make Record',
+                'blue'
+            );
+        }
+
+        // Abuse Reports Functions
+        let abuseReports = [];
+        let filteredAbuseReports = [];
+
+        function loadAbuseReports() {
+            fetch('/api/admin/abuse-reports', {
+                credentials: 'include'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    abuseReports = data.reports || [];
+                    updateAbuseStats();
+                    filterAbuseReports(currentAbuseFilter);
+                })
+                .catch(error => {
+                    console.error('Error loading abuse reports:', error);
+                    showNotification('Error loading abuse reports', 'error');
+                });
+        }
+
+        function updateAbuseStats() {
+            const pending = abuseReports.filter(r => r.status === 'pending').length;
+            const resolved = abuseReports.filter(r => r.status === 'resolved').length;
+            const dismissed = abuseReports.filter(r => r.status === 'dismissed').length;
+
+            document.getElementById('pendingAbuseCount').textContent = pending;
+            document.getElementById('resolvedAbuseCount').textContent = resolved;
+            document.getElementById('dismissedAbuseCount').textContent = dismissed;
+        }
+
+        function filterAbuseReports(status) {
+            currentAbuseFilter = status;
+            
+            // Update filter buttons
+            document.querySelectorAll('.abuse-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-[#4c19e5]', 'text-[#f9f8fc]');
+                btn.classList.add('bg-[#eae7f3]', 'text-[#110e1b]');
+            });
+            
+            // Set active button
+            const activeBtn = document.getElementById(`abuseFilter${status.charAt(0).toUpperCase() + status.slice(1)}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-[#4c19e5]', 'text-[#f9f8fc]');
+                activeBtn.classList.remove('bg-[#eae7f3]', 'text-[#110e1b]');
+            }
+
+            // Filter reports
+            if (status === 'all') {
+                filteredAbuseReports = abuseReports;
+            } else {
+                filteredAbuseReports = abuseReports.filter(report => report.status === status);
+            }
+
+            renderAbuseReports();
+        }
+
+        function renderAbuseReports() {
+            const tbody = document.getElementById('abuse-reports-tbody');
+            
+            if (filteredAbuseReports.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No abuse reports found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filteredAbuseReports.map(report => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                        <div class="font-medium">${escapeHtml(report.reported_subdomain)}</div>
+                        <div class="text-sm text-gray-500">${escapeHtml(report.abuse_type)}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="font-medium">${escapeHtml(report.reporter_email)}</div>
+                        <div class="text-sm text-gray-500">${new Date(report.created_at).toLocaleDateString()}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="text-sm max-w-xs truncate" title="${escapeHtml(report.description)}">
+                            ${escapeHtml(report.description)}
+                        </div>
+                        ${report.evidence_url ? `<a href="${escapeHtml(report.evidence_url)}" target="_blank" class="text-blue-600 text-xs hover:underline">View Evidence</a>` : ''}
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 text-xs rounded-full ${getStatusColor(report.status)}">
+                            ${report.status}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-500">
+                        ${report.admin_notes || '-'}
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex space-x-2">
+                            ${report.status === 'pending' ? `
+                                <button onclick="resolveAbuseReport('${report.$id}')" 
+                                        class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700">
+                                    Resolve
+                                </button>
+                                <button onclick="dismissAbuseReport('${report.$id}')" 
+                                        class="px-3 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700">
+                                    Dismiss
+                                </button>
+                            ` : ''}
+                            <button onclick="viewAbuseReport('${report.$id}')" 
+                                    class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
+                                View
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getStatusColor(status) {
+            switch(status) {
+                case 'pending': return 'bg-yellow-100 text-yellow-800';
+                case 'resolved': return 'bg-green-100 text-green-800';
+                case 'dismissed': return 'bg-gray-100 text-gray-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function resolveAbuseReport(reportId) {
+            showPrompt(
+                'Resolve Abuse Report',
+                'Add resolution notes (optional):',
+                (notes) => {
+                    fetch(`/api/admin/abuse-reports/${reportId}/resolve`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ notes: notes || '' })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification('Abuse report resolved successfully', 'success');
+                            loadAbuseReports();
+                        } else {
+                            showNotification(data.error || 'Error resolving report', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error resolving report:', error);
+                        showNotification('Error resolving report', 'error');
+                    });
+                }
+            );
+        }
+
+        function dismissAbuseReport(reportId) {
+            showPrompt(
+                'Dismiss Abuse Report',
+                'Add dismissal notes (optional):',
+                (notes) => {
+                    fetch(`/api/admin/abuse-reports/${reportId}/dismiss`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ notes: notes || '' })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification('Abuse report dismissed successfully', 'success');
+                            loadAbuseReports();
+                        } else {
+                            showNotification(data.error || 'Error dismissing report', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error dismissing report:', error);
+                        showNotification('Error dismissing report', 'error');
+                    });
+                }
+            );
+        }
+
+        function viewAbuseReport(reportId) {
+            const report = abuseReports.find(r => r.$id === reportId);
+            if (!report) return;
+
+            alert(`Abuse Report Details:
+            
+Reported Subdomain: ${report.reported_subdomain}
+Reporter Email: ${report.reporter_email}
+Abuse Type: ${report.abuse_type}
+Status: ${report.status}
+Created: ${new Date(report.created_at).toLocaleString()}
+${report.updated_at ? `Updated: ${new Date(report.updated_at).toLocaleString()}` : ''}
+
+Description:
+${report.description}
+
+${report.evidence_url ? `Evidence URL: ${report.evidence_url}` : ''}
+
+${report.admin_notes ? `Admin Notes: ${report.admin_notes}` : ''}
+
+${report.resolved_by ? `Resolved By: ${report.resolved_by}` : ''}`);
+        }
+
+        // Helper functions for abuse reports
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function getStatusColor(status) {
+            switch(status) {
+                case 'pending': return 'bg-yellow-100 text-yellow-800';
+                case 'resolved': return 'bg-green-100 text-green-800';
+                case 'dismissed': return 'bg-gray-100 text-gray-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function viewAbuseReport(reportId) {
+            const report = abuseReports.find(r => r.$id === reportId);
+            if (!report) return;
+
+            showNotification(`Abuse Report Details:
+            
+Reported Subdomain: ${report.reported_subdomain}
+Reporter Email: ${report.reporter_email}
+Abuse Type: ${report.abuse_type}
+Status: ${report.status}
+Created: ${new Date(report.created_at).toLocaleString()}
+${report.updated_at ? `Updated: ${new Date(report.updated_at).toLocaleString()}` : ''}
+
+Description:
+${report.description}
+
+${report.evidence_url ? `Evidence URL: ${report.evidence_url}` : ''}
+
+${report.admin_notes ? `Admin Notes: ${report.admin_notes}` : ''}
+
+${report.resolved_by ? `Resolved By: ${report.resolved_by}` : ''}`, 'info');
+        }
+
+        // Users Tab Functions
+        let allUsers = [];
+        let currentSearchTerm = '';
+        let searchTimeout = null;
+
+        function loadUsers(searchTerm = '') {
+            console.log('📊 Loading users...', searchTerm ? `Search: "${searchTerm}"` : 'All users');
+            
+            const url = searchTerm ? 
+                `/api/admin/users?search=${encodeURIComponent(searchTerm)}` : 
+                '/api/admin/users';
+                
+            fetch(url, {
+                credentials: 'include'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        allUsers = data.users || [];
+                        currentSearchTerm = searchTerm;
+                        window.lastUserStats = data.stats; // Store stats for use in updateUserStats
+                        updateUserStats(data.stats, data.isFiltered, data.searchTerm);
+                        renderUsers();
+                        updateSearchResultsInfo(data.isFiltered, data.searchTerm, data.stats.filteredUsers, data.stats.totalUsers);
+                        console.log('✅ Users loaded successfully:', allUsers.length);
+                        console.log('📊 User stats:', data.stats);
+                    } else {
+                        showNotification(data.error || 'Failed to load users', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading users:', error);
+                    showNotification('Error loading users: ' + error.message, 'error');
+                });
+        }
+
+        function updateUserStats(stats, isFiltered, searchTerm) {
+            if (!stats) {
+                document.getElementById('total-users').textContent = '0';
+                document.getElementById('active-users').textContent = '0';
+                document.getElementById('suspended-users').textContent = '0';
+                return;
+            }
+
+            // Show total users in database (not filtered count)
+            document.getElementById('total-users').textContent = stats.totalUsers || 0;
+            document.getElementById('active-users').textContent = stats.activeUsers || 0;
+            document.getElementById('suspended-users').textContent = '0'; // Not implemented yet
+            
+            // If filtered, show additional context
+            if (isFiltered && searchTerm) {
+                const totalElement = document.getElementById('total-users');
+                totalElement.title = `Showing ${stats.filteredUsers} of ${stats.totalUsers} users (filtered by "${searchTerm}")`;
+            }
+        }
+
+        function renderUsers() {
+            const tbody = document.getElementById('users-tbody');
+            
+            if (allUsers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No users found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = allUsers.map(user => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <div>
+                                <div class="font-medium">${escapeHtml(user.username)}</div>
+                                <div class="text-sm text-gray-500">ID: ${escapeHtml(user.id)}</div>
+                                ${user.isAdmin ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">Admin</span>' : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="text-sm">${escapeHtml(user.email)}</div>
+                        ${user.verified ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Verified</span>' : '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Unverified</span>'}
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 text-xs rounded-full ${user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${user.status}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="font-medium">${user.subdomainCount}</span>
+                        ${user.subdomainCount > 0 ? '<span class="text-xs text-gray-500"> requests</span>' : ''}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-500">
+                        <div>${new Date(user.lastActive).toLocaleDateString()}</div>
+                        <div class="text-xs text-gray-400">Joined: ${new Date(user.createdAt).toLocaleDateString()}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex space-x-2">
+                            ${user.status === 'active' ? `
+                                <button onclick="suspendUser('${user.id}')" 
+                                        class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700">
+                                    Suspend
+                                </button>
+                            ` : `
+                                <button onclick="unsuspendUser('${user.id}')" 
+                                        class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700">
+                                    Activate
+                                </button>
+                            `}
+                            ${!user.isAdmin ? `
+                                <button onclick="makeAdmin('${user.id}')" 
+                                        class="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700">
+                                    Make Admin
+                                </button>
+                            ` : `
+                                <button onclick="removeAdmin('${user.id}')" 
+                                        class="px-3 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700">
+                                    Remove Admin
+                                </button>
+                            `}
+                            <button onclick="viewUserDetails('${user.id}')" 
+                                    class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
+                                View
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function suspendUser(userId) {
+            showPrompt(
+                'Suspend User',
+                'Enter reason for suspension:',
+                (reason) => {
+                    if (!reason.trim()) {
+                        showNotification('Suspension reason is required', 'error');
+                        return;
+                    }
+
+                    fetch(`/api/admin/users/${userId}/suspend`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ reason: reason })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification('User suspended successfully', 'success');
+                            loadUsers(currentSearchTerm);
+                        } else {
+                            showNotification(data.error || 'Failed to suspend user', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error suspending user:', error);
+                        showNotification('Error suspending user', 'error');
+                    });
+                }
+            );
+        }
+
+        function unsuspendUser(userId) {
+            // This would need to be implemented in the backend
+            showNotification('Unsuspend functionality not yet implemented', 'warning');
+        }
+
+        function viewUserDetails(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            let subdomainDetails = '';
+            if (user.subdomains && user.subdomains.length > 0) {
+                subdomainDetails = '\n\nSubdomains:\n' + user.subdomains.map(sub => 
+                    `• ${sub.subdomain} (${sub.status}) - Created: ${new Date(sub.created_at).toLocaleDateString()}`
+                ).join('\n');
+            }
+
+            const userDetails = `User Details:
+
+Username: ${user.username}
+Email: ${user.email}
+Status: ${user.status}
+Verified: ${user.verified ? 'Yes' : 'No'}
+Admin: ${user.isAdmin ? 'Yes' : 'No'}
+Subdomain Count: ${user.subdomainCount}
+Last Active: ${new Date(user.lastActive).toLocaleString()}
+Account Created: ${new Date(user.createdAt).toLocaleString()}
+User ID: ${user.id}
+Labels: ${user.labels.join(', ') || 'None'}${subdomainDetails}`;
+
+            alert(userDetails);
+        }
+
+        function makeAdmin(userId) {
+            showConfirmation(
+                'Make User Admin',
+                'Are you sure you want to give this user admin privileges? This will allow them to access the admin panel and manage all system settings.',
+                () => {
+                    fetch(`/api/admin/users/${userId}/make-admin`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'include'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification('User has been made admin successfully', 'success');
+                            loadUsers(currentSearchTerm);
+                        } else {
+                            showNotification(data.error || 'Failed to make user admin', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error making user admin:', error);
+                        showNotification('Error making user admin', 'error');
+                    });
+                },
+                'Make Admin',
+                'purple'
+            );
+        }
+
+        function removeAdmin(userId) {
+            showConfirmation(
+                'Remove Admin Privileges',
+                'Are you sure you want to remove admin privileges from this user? They will lose access to the admin panel.',
+                () => {
+                    fetch(`/api/admin/users/${userId}/remove-admin`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'include'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification('Admin privileges removed successfully', 'success');
+                            loadUsers(currentSearchTerm);
+                        } else {
+                            showNotification(data.error || 'Failed to remove admin privileges', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error removing admin privileges:', error);
+                        showNotification('Error removing admin privileges', 'error');
+                    });
+                },
+                'Remove Admin',
+                'red'
+            );
+        }
+
+        // User Search Functions
+        function debounceUserSearch(searchTerm) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                performUserSearch(searchTerm);
+            }, 300); // 300ms delay
+        }
+
+        function performUserSearch(searchTerm) {
+            const trimmedSearch = searchTerm.trim();
+            console.log('🔍 Performing user search:', trimmedSearch);
+            loadUsers(trimmedSearch);
+        }
+
+        function clearUserSearch() {
+            document.getElementById('userSearchInput').value = '';
+            currentSearchTerm = '';
+            loadUsers(''); // Load all users
+        }
+
+        function updateSearchResultsInfo(isFiltered, searchTerm, filteredCount, totalCount) {
+            const infoDiv = document.getElementById('searchResultsInfo');
+            const textSpan = document.getElementById('searchResultsText');
+            
+            if (isFiltered && searchTerm) {
+                textSpan.textContent = `Found ${filteredCount} of ${totalCount} users matching "${searchTerm}"`;
+                infoDiv.classList.remove('hidden');
+            } else {
+                infoDiv.classList.add('hidden');
+            }
+        }
+
+        // Settings Tab Functions
+        let allDeletionRequests = [];
+
+        function loadDeletionRequests() {
+            fetch('/api/admin/deletion-requests', {
+                credentials: 'include'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        allDeletionRequests = data.requests || [];
+                        renderDeletionRequests();
+                        // Update deletion requests count in users stats
+                        const pending = allDeletionRequests.filter(r => r.status === 'pending').length;
+                        if (document.getElementById('deletion-requests')) {
+                            document.getElementById('deletion-requests').textContent = pending;
+                        }
+                    } else {
+                        showNotification(data.error || 'Failed to load deletion requests', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading deletion requests:', error);
+                    showNotification('Error loading deletion requests', 'error');
+                });
+        }
+
+        function renderDeletionRequests() {
+            const tbody = document.getElementById('deletion-requests-tbody');
+            
+            if (allDeletionRequests.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No deletion requests found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = allDeletionRequests.map(request => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                        <div class="font-medium">${request.user_id ? 'Logged in user' : 'Anonymous'}</div>
+                        <div class="text-sm text-gray-500">${request.user_id || 'No user ID'}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="text-sm">${escapeHtml(request.email)}</div>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-500">
+                        ${new Date(request.created_at).toLocaleDateString()}
+                    </td>
+                    <td class="px-4 py-3">
+                        ${request.status === 'pending' ? `
+                            <span class="px-2 py-1 text-xs rounded-full font-medium ${getTimePendingColor(request.created_at)}">
+                                ${getTimePending(request.created_at, request.status)}
+                            </span>
+                        ` : '-'}
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 text-xs rounded-full ${getDeletionStatusColor(request.status)}">
+                            ${request.status}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex space-x-2">
+                            ${request.status === 'pending' ? `
+                                <button onclick="approveDeletionRequest('${request.$id}')" 
+                                        class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700">
+                                    Approve
+                                </button>
+                                <button onclick="denyDeletionRequest('${request.$id}')" 
+                                        class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700">
+                                    Deny
+                                </button>
+                            ` : ''}
+                            <button onclick="viewDeletionRequest('${request.$id}')" 
+                                    class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
+                                View
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getDeletionStatusColor(status) {
+            switch(status) {
+                case 'pending': return 'bg-yellow-100 text-yellow-800';
+                case 'approved': return 'bg-green-100 text-green-800';
+                case 'denied': return 'bg-red-100 text-red-800';
+                case 'cancelled': return 'bg-gray-100 text-gray-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function getTimePendingColor(createdAt) {
+            const now = new Date();
+            const created = new Date(createdAt);
+            const diffHours = Math.floor((now - created) / (1000 * 60 * 60));
+            
+            if (diffHours < 24) return 'bg-green-100 text-green-800'; // Recent
+            if (diffHours < 168) return 'bg-orange-100 text-orange-800'; // 1-7 days
+            return 'bg-red-100 text-red-800'; // Over 7 days
+        }
+
+        function getTimePending(createdAt, status) {
+            if (status !== 'pending') {
+                return '-';
+            }
+            
+            const now = new Date();
+            const created = new Date(createdAt);
+            const diffMs = now - created;
+            
+            const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            
+            if (days > 0) {
+                return `${days} day${days !== 1 ? 's' : ''} ago`;
+            } else if (hours > 0) {
+                return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+            } else if (minutes > 0) {
+                return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+            } else {
+                return 'just now';
+            }
+        }
+
+        function approveDeletionRequest(requestId) {
+            showConfirmation(
+                'Approve Data Deletion Request',
+                'Are you sure you want to approve this data deletion request? This action will permanently delete all user data.',
+                () => {
+                    fetch(`/api/admin/deletion-requests/${requestId}/approve`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification('Deletion request approved successfully', 'success');
+                            loadDeletionRequests();
+                        } else {
+                            showNotification(data.error || 'Failed to approve deletion request', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error approving deletion request:', error);
+                        showNotification('Error approving deletion request', 'error');
+                    });
+                },
+                'Approve',
+                'red'
+            );
+        }
+
+        function denyDeletionRequest(requestId) {
+            showPrompt(
+                'Deny Data Deletion Request',
+                'Enter reason for denial (optional):',
+                (reason) => {
+                    fetch(`/api/admin/deletion-requests/${requestId}/deny`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ reason: reason || '' })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification('Deletion request denied successfully', 'success');
+                            loadDeletionRequests();
+                        } else {
+                            showNotification(data.error || 'Failed to deny deletion request', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error denying deletion request:', error);
+                        showNotification('Error denying deletion request', 'error');
+                    });
+                }
+            );
+        }
+
+        function viewDeletionRequest(requestId) {
+            const request = allDeletionRequests.find(r => r.$id === requestId);
+            if (!request) return;
+
+            alert(`Deletion Request Details:
+            
+Email: ${request.email}
+User ID: ${request.user_id || 'Anonymous'}
+Status: ${request.status}
+Created: ${new Date(request.created_at).toLocaleString()}
+${request.approved_at ? `Approved: ${new Date(request.approved_at).toLocaleString()}` : ''}
+${request.denied_at ? `Denied: ${new Date(request.denied_at).toLocaleString()}` : ''}
+${request.cancelled_at ? `Cancelled: ${new Date(request.cancelled_at).toLocaleString()}` : ''}
+${request.cancelled_by_user ? `Cancelled by: User` : ''}
+
+Reason:
+${request.reason}
+
+${request.denial_reason ? `Denial Reason: ${request.denial_reason}` : ''}`);
+        }
+
+        // Handle authentication state and user display
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Admin panel initializing...');
+            
+            // Initialize with the first tab (subdomains)
+            console.log('🎯 Setting initial tab to subdomains...');
+            currentTab = 'subdomains';
+            
+            // Wait a bit for the Discord auth script to load
+            setTimeout(() => {
+                console.log('📊 Loading initial data...');
+                // Load requests after auth script is ready
+                loadRequests();
+                loadAbuseReports();
+                loadUsers();
+                loadDeletionRequests();
+                loadSettings();
+                
+                // If the Discord auth script loaded user info, display it
+                const userNameElement = document.querySelector('.user-name');
+                if (window.discordUser && userNameElement) {
+                    userNameElement.textContent = window.discordUser.username || 'Admin';
+                    console.log('👤 User set:', window.discordUser.username);
+                } else if (userNameElement) {
+                    userNameElement.textContent = 'Admin';
+                    console.log('👤 Using default admin name');
+                }
+                
+                console.log('✅ Admin panel initialized successfully');
+            }, 200); // Give the Discord auth script time to load
+
+            // Initialize search functionality
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', searchRequests);
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        searchRequests();
+                    }
+                });
+                console.log('🔍 Search functionality initialized');
+            }
+            
+            // Test tab switching functionality
+            console.log('🧪 Testing tab elements...');
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            console.log('📋 Found', tabButtons.length, 'tab buttons');
+            console.log('📄 Found', tabContents.length, 'tab contents');
+            
+            // Make sure the subdomains tab is visible
+            const subdomainsContent = document.getElementById('subdomainsContent');
+            if (subdomainsContent) {
+                subdomainsContent.style.display = 'block';
+                console.log('👁️ Ensured subdomains tab is visible');
+            }
+        });
+
+        // System Settings Functions
+        async function saveSettings() {
+            const domainName = document.getElementById('domainName')?.value;
+            const maxSubdomains = document.getElementById('maxSubdomains')?.value;
+            const autoApprove = document.getElementById('autoApprove')?.checked;
+            
+            if (!domainName || !maxSubdomains) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            if (parseInt(maxSubdomains) < 1 || parseInt(maxSubdomains) > 100) {
+                showNotification('Max subdomains must be between 1 and 100', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/save-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        domainName,
+                        maxSubdomains: parseInt(maxSubdomains),
+                        autoApprove
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('Settings saved successfully! Changes will take effect immediately.', 'success');
+                } else {
+                    showNotification(data.error || 'Error saving settings', 'error');
+                }
+            } catch (error) {
+                console.error('Save settings error:', error);
+                showNotification('Error saving settings. Please try again.', 'error');
+            }
+        }
+
+        // Maintenance Mode Functions
+        async function toggleMaintenanceMode() {
+            const maintenanceSelect = document.getElementById('maintenanceMode');
+            const enabled = maintenanceSelect.value === 'true';
+            
+            try {
+                const response = await fetch('/api/admin/toggle-maintenance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ enabled })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    // Update the select to reflect the current state
+                    maintenanceSelect.value = data.maintenanceMode ? 'true' : 'false';
+                } else {
+                    showNotification(data.error || 'Error toggling maintenance mode', 'error');
+                    // Revert the select value
+                    await loadMaintenanceStatus();
+                }
+            } catch (error) {
+                console.error('Toggle maintenance error:', error);
+                showNotification('Error toggling maintenance mode. Please try again.', 'error');
+                // Revert the select value
+                await loadMaintenanceStatus();
+            }
+        }
+
+        async function loadMaintenanceStatus() {
+            try {
+                const response = await fetch('/api/admin/maintenance-status', {
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const maintenanceSelect = document.getElementById('maintenanceMode');
+                    if (maintenanceSelect) {
+                        maintenanceSelect.value = data.maintenanceMode ? 'true' : 'false';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading maintenance status:', error);
+            }
+        }
+
+        // Global variables for modal functionality
+        let confirmationCallback = null;
+        let promptCallback = null;
+
+        // Custom Modal Functions
+        function showConfirmation(title, message, onConfirm, confirmText = 'Confirm', confirmColor = 'red') {
+            document.getElementById('confirmationTitle').textContent = title;
+            document.getElementById('confirmationMessage').textContent = message;
+            
+            const confirmBtn = document.getElementById('confirmationConfirmBtn');
+            confirmBtn.textContent = confirmText;
+            
+            // Set button color
+            confirmBtn.className = `px-4 py-2 text-white rounded-md transition-colors`;
+            if (confirmColor === 'green') {
+                confirmBtn.className += ' bg-green-600 hover:bg-green-700';
+            } else if (confirmColor === 'blue') {
+                confirmBtn.className += ' bg-blue-600 hover:bg-blue-700';
+            } else {
+                confirmBtn.className += ' bg-red-600 hover:bg-red-700';
+            }
+            
+            // Store callback
+            confirmationCallback = onConfirm;
+            
+            document.getElementById('confirmationModal').classList.remove('hidden');
+        }
+
+        function closeConfirmationModal() {
+            document.getElementById('confirmationModal').classList.add('hidden');
+            confirmationCallback = null;
+        }
+
+        function confirmAction() {
+            if (confirmationCallback) {
+                confirmationCallback();
+            }
+            closeConfirmationModal();
+        }
+
+        function showPrompt(title, message, onConfirm, placeholder = '') {
+            document.getElementById('promptTitle').textContent = title;
+            document.getElementById('promptMessage').textContent = message;
+            
+            const input = document.getElementById('promptInput');
+            input.value = '';
+            input.placeholder = placeholder;
+            
+            // Store callback
+            promptCallback = onConfirm;
+            
+            document.getElementById('promptModal').classList.remove('hidden');
+            input.focus();
+        }
+
+        function closePromptModal() {
+            document.getElementById('promptModal').classList.add('hidden');
+            promptCallback = null;
+        }
+
+        function confirmPrompt() {
+            const value = document.getElementById('promptInput').value;
+            if (promptCallback) {
+                promptCallback(value);
+            }
+            closePromptModal();
+        }
+
+        // Enhanced notification system
+        function showNotification(message, type = 'info') {
+            // For now, keep using alerts but with better formatting
+            const icon = type === 'success' ? '✅' : 
+                        type === 'error' ? '❌' : 
+                        type === 'warning' ? '⚠️' : 'ℹ️';
+            alert(icon + ' ' + message);
+        }
+
+        // Search functionality
+        function searchRequests() {
+            const input = document.getElementById('searchInput');
+            searchTerm = input.value.toLowerCase().trim();
+            filterRequests(currentFilter);
+        }
+
+        function clearSearch() {
+            const input = document.getElementById('searchInput');
+            input.value = '';
+            searchTerm = '';
+            filterRequests(currentFilter);
+        }
+
+        // Duplicate function removed - using the main switchTab function above
+
+        // Placeholder functions for new tabs
+        function loadSubdomainRequests() {
+            // This is the same as loadRequests - redirect to subdomain tab
+            loadRequests();
+        }
+
+        function loadLogs() {
+            console.log('📊 Loading logs...');
+            // Placeholder for logs functionality
+            const tbody = document.getElementById('logs-tbody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">Logs functionality coming soon...</td></tr>';
+            }
+        }
+
+        // Settings Tab Functions
+        async function loadSettings() {
+            console.log('Loading admin settings...');
+            try {
+                const response = await fetch('/api/admin/settings', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load settings');
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const settings = data.settings;
+                    
+                    // Update form fields
+                    document.getElementById('domainName').value = settings.domainName || 'my-cool.space';
+                    document.getElementById('maxSubdomains').value = settings.maxSubdomains || 1;
+                    document.getElementById('autoApprove').checked = settings.autoApprove || false;
+                    document.getElementById('maintenanceMode').value = settings.maintenanceMode ? 'true' : 'false';
+                    
+                    console.log('Settings loaded successfully:', settings);
+                } else {
+                    showNotification('Failed to load settings: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+                showNotification('Error loading settings: ' + error.message, 'error');
+            }
+        }        // Initialize search event listener
+        // (This is now handled in the main DOMContentLoaded event above)
+
+        // Add event listeners for modal buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('confirmationConfirmBtn').addEventListener('click', confirmAction);
+            document.getElementById('promptConfirmBtn').addEventListener('click', confirmPrompt);
+            
+            // Allow Enter key to confirm prompt
+            document.getElementById('promptInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    confirmPrompt();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

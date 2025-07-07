@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f9f8fc; }
+        .time-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .time-recent { background-color: #dcfce7; color: #166534; }
+        .time-moderate { background-color: #fed7aa; color: #9a3412; }
+        .time-old { background-color: #fecaca; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="border-b border-[#eae7f3] bg-white">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <h1 class="text-xl font-bold text-[#110e1b]">my-cool.space</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <% if (user) { %>
+                        <span class="text-[#604e97]">Hello, <%= user.username %>!</span>
+                        <a href="/dashboard" class="bg-[#4c19e5] text-white px-4 py-2 rounded-md hover:bg-[#3d14b8] transition-colors">Dashboard</a>
+                        <a href="/account-settings" class="text-[#4c19e5] font-medium">Account Settings</a>
+                        <a href="/auth/logout" class="text-[#604e97] hover:text-[#4c19e5] transition-colors">Logout</a>
+                    <% } else { %>
+                        <a href="/auth/discord" class="bg-[#4c19e5] text-white px-4 py-2 rounded-md hover:bg-[#3d14b8] transition-colors flex items-center space-x-2">
+                            <span>Login with Discord</span>
+                        </a>
+                    <% } %>
+                    <a href="/report-abuse" class="text-[#604e97] hover:text-[#4c19e5] transition-colors">Report Abuse</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-[#110e1b] mb-2">Account Settings</h1>
+                <p class="text-[#604e97]">Manage your account preferences and data</p>
+            </div>
+
+            <% if (!user) { %>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
+                    <p class="text-yellow-800">Please <a href="/auth/discord" class="text-[#4c19e5] hover:underline">log in with Discord</a> to access your account settings.</p>
+                </div>
+            <% } else { %>
+
+            <!-- Tabs -->
+            <div class="flex border-b border-[#d6d0e7] mb-6">
+                <button 
+                    id="accountTab" 
+                    class="tab-button px-4 py-2 border-b-2 border-[#4c19e5] text-[#4c19e5] font-medium text-sm"
+                    onclick="switchTab('account')"
+                >
+                    Account Information
+                </button>
+                <button 
+                    id="dataTab" 
+                    class="tab-button px-4 py-2 border-b-2 border-transparent text-[#604e97] font-medium text-sm ml-4"
+                    onclick="switchTab('data')"
+                >
+                    Data Management
+                </button>
+                <button 
+                    id="deletionTab" 
+                    class="tab-button px-4 py-2 border-b-2 border-transparent text-[#604e97] font-medium text-sm ml-4"
+                    onclick="switchTab('deletion')"
+                >
+                    Data Deletion Requests
+                </button>
+            </div>
+
+            <!-- Account Information Tab -->
+            <div id="accountContent" class="tab-content">
+                <div class="bg-white rounded-lg border border-[#eae7f3] p-6 mb-6">
+                    <h2 class="text-xl font-semibold text-[#110e1b] mb-4">Account Information</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-[#604e97] mb-1">Discord Username</label>
+                            <div class="p-3 bg-[#f9f8fc] rounded-md border border-[#eae7f3]">
+                                <%= user.username %>#<%= user.discriminator %>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-[#604e97] mb-1">Email</label>
+                            <div class="p-3 bg-[#f9f8fc] rounded-md border border-[#eae7f3]">
+                                <%= user.email || 'Not available' %>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-[#604e97] mb-1">User ID</label>
+                            <div class="p-3 bg-[#f9f8fc] rounded-md border border-[#eae7f3] font-mono text-sm">
+                                <%= user.id %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Management Tab -->
+            <div id="dataContent" class="tab-content hidden">
+                <div class="bg-white rounded-lg border border-[#eae7f3] p-6 mb-6">
+                    <h2 class="text-xl font-semibold text-[#110e1b] mb-4">Data Management</h2>
+                    <div class="space-y-4">
+                        <div class="p-4 bg-[#f9f8fc] rounded-md border border-[#eae7f3]">
+                            <h3 class="font-medium text-[#110e1b] mb-2">Export Your Data</h3>
+                            <p class="text-sm text-[#604e97] mb-3">Download all your subdomain requests and account data.</p>
+                            <button onclick="exportData()" class="bg-[#604e97] text-white px-4 py-2 rounded-md hover:bg-[#4c19e5] transition-colors">
+                                Export Data
+                            </button>
+                        </div>
+                        <div class="p-4 bg-red-50 rounded-md border border-red-200">
+                            <h3 class="font-medium text-red-900 mb-2">Delete Account</h3>
+                            <p class="text-sm text-red-700 mb-3">Request deletion of your account and all associated data. This action requires admin approval.</p>
+                            <button onclick="openDeletionModal()" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors">
+                                Request Account Deletion
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Deletion Requests Tab -->
+            <div id="deletionContent" class="tab-content hidden">
+                <div class="bg-white rounded-lg border border-[#eae7f3] p-6">
+                    <h2 class="text-xl font-semibold text-[#110e1b] mb-4">Data Deletion Requests</h2>
+                    <p class="text-[#604e97] mb-6">Manage user data deletion requests. Users can request data deletion at <code class="bg-[#f9f8fc] px-1 py-0.5 rounded">/deletion</code>.</p>
+                    <div id="deletionRequestsList">
+                        <div class="text-center py-8">
+                            <div class="text-[#604e97] mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48px" height="48px" fill="currentColor" viewBox="0 0 256 256" class="animate-spin mx-auto">
+                                    <path d="M197.67,186.37a8,8,0,0,1,0,11.29C196.58,198.73,170.82,224,128,224c-37.39,0-64.53-22.4-80-39.85V208a8,8,0,0,1-16,0V160a8,8,0,0,1,8-8H88a8,8,0,0,1,0,16H55.44C67.76,183.35,93,208,128,208c36.72,0,58.4-21.31,58.37-21.34A8,8,0,0,1,197.67,186.37ZM216,40a8,8,0,0,0-8,8V71.85C192.53,54.4,165.39,32,128,32,85.18,32,59.42,57.27,58.33,58.34a8,8,0,0,0,11.34,11.32C69.6,69.69,91.28,48,128,48c35,0,60.24,24.65,72.56,40H168a8,8,0,0,0,0,16h48a8,8,0,0,0,8-8V48A8,8,0,0,0,216,40Z"></path>
+                                </svg>
+                            </div>
+                            <p class="text-[#604e97] text-base font-normal leading-normal">Loading deletion requests...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <% } %>
+        </div>
+    </main>
+
+    <!-- Custom Deletion Modal -->
+    <div id="deletionModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-lg font-semibold text-[#110e1b] mb-4">Request Account Deletion</h3>
+            <p class="text-[#604e97] text-sm mb-4">Please provide a reason for your account deletion request. This helps us improve our service.</p>
+            <textarea 
+                id="deletionReason" 
+                class="w-full p-3 border border-[#eae7f3] rounded-md text-sm" 
+                rows="4" 
+                placeholder="Please explain why you want to delete your account..."
+                maxlength="1000"
+            ></textarea>
+            <div class="text-xs text-[#604e97] mb-4">Minimum 10 characters required</div>
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeDeletionModal()" class="px-4 py-2 text-[#604e97] hover:text-[#110e1b] transition-colors">
+                    Cancel
+                </button>
+                <button onclick="submitDeletionRequest()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+                    Submit Request
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success/Error Notifications -->
+    <div id="notification" class="hidden fixed top-4 right-4 z-50 max-w-sm">
+        <div id="notification-content" class="p-4 rounded-lg shadow-lg">
+            <p id="notification-message" class="text-sm font-medium"></p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-[#eae7f3] bg-white mt-16">
+        <div class="container mx-auto px-6 py-8">
+            <div class="text-center">
+                <p class="text-[#604e97]">© 2025 my-cool.space. Made with ❤️ for the community.</p>
+                <div class="mt-4 space-x-6">
+                    <a href="/terms" class="text-[#604e97] hover:text-[#4c19e5] transition-colors">Terms</a>
+                    <a href="/privacy" class="text-[#604e97] hover:text-[#4c19e5] transition-colors">Privacy</a>
+                    <a href="/report-abuse" class="text-[#604e97] hover:text-[#4c19e5] transition-colors">Report Abuse</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let currentTab = 'account';
+
+        // Tab switching functionality
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Hide all tab contents
+            document.getElementById('accountContent').style.display = tab === 'account' ? 'block' : 'none';
+            document.getElementById('dataContent').style.display = tab === 'data' ? 'block' : 'none';
+            document.getElementById('deletionContent').style.display = tab === 'deletion' ? 'block' : 'none';
+            
+            // Update tab button styles
+            const accountTabBtn = document.getElementById('accountTab');
+            const dataTabBtn = document.getElementById('dataTab');
+            const deletionTabBtn = document.getElementById('deletionTab');
+            
+            // Reset all tab styles
+            accountTabBtn.className = 'tab-button px-4 py-2 border-b-2 border-transparent text-[#604e97] font-medium text-sm';
+            dataTabBtn.className = 'tab-button px-4 py-2 border-b-2 border-transparent text-[#604e97] font-medium text-sm ml-4';
+            deletionTabBtn.className = 'tab-button px-4 py-2 border-b-2 border-transparent text-[#604e97] font-medium text-sm ml-4';
+            
+            // Set active tab style
+            if (tab === 'account') {
+                accountTabBtn.className = 'tab-button px-4 py-2 border-b-2 border-[#4c19e5] text-[#4c19e5] font-medium text-sm';
+            } else if (tab === 'data') {
+                dataTabBtn.className = 'tab-button px-4 py-2 border-b-2 border-[#4c19e5] text-[#4c19e5] font-medium text-sm ml-4';
+            } else if (tab === 'deletion') {
+                deletionTabBtn.className = 'tab-button px-4 py-2 border-b-2 border-[#4c19e5] text-[#4c19e5] font-medium text-sm ml-4';
+                loadDeletionRequests(); // Load deletion requests when tab is opened
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const content = document.getElementById('notification-content');
+            const messageEl = document.getElementById('notification-message');
+            
+            messageEl.textContent = message;
+            
+            // Set notification style based on type
+            content.className = 'p-4 rounded-lg shadow-lg ';
+            if (type === 'success') {
+                content.className += 'bg-green-100 border border-green-400 text-green-700';
+            } else if (type === 'error') {
+                content.className += 'bg-red-100 border border-red-400 text-red-700';
+            } else if (type === 'warning') {
+                content.className += 'bg-yellow-100 border border-yellow-400 text-yellow-700';
+            } else {
+                content.className += 'bg-blue-100 border border-blue-400 text-blue-700';
+            }
+            
+            notification.classList.remove('hidden');
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Load user deletion requests on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            <% if (user) { %>
+            // Initialize first tab
+            switchTab('account');
+            <% } %>
+        });
+
+        function exportData() {
+            fetch('/api/user/export-data', {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.blob();
+                } else {
+                    throw new Error('Export failed');
+                }
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'my-cool-space-data.json';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                showNotification('Data exported successfully!', 'success');
+            })
+            .catch(error => {
+                console.error('Export data error:', error);
+                showNotification('Error exporting data. Please try again.', 'error');
+            });
+        }
+
+        // Custom modal functions
+        function openDeletionModal() {
+            document.getElementById('deletionModal').classList.remove('hidden');
+            document.getElementById('deletionReason').focus();
+        }
+
+        function closeDeletionModal() {
+            document.getElementById('deletionModal').classList.add('hidden');
+            document.getElementById('deletionReason').value = '';
+        }
+
+        function submitDeletionRequest() {
+            const reason = document.getElementById('deletionReason').value.trim();
+            
+            if (!reason || reason.length < 10) {
+                showNotification('Please provide a reason of at least 10 characters.', 'error');
+                return;
+            }
+
+            fetch('/api/request-deletion', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    email: '<%= user?.email || "" %>',
+                    reason: reason
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Account deletion request submitted successfully. An admin will review it shortly.', 'success');
+                    closeDeletionModal();
+                    if (currentTab === 'deletion') {
+                        loadDeletionRequests(); // Refresh the list if on deletion tab
+                    }
+                } else {
+                    showNotification(data.error || 'Error submitting deletion request', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Request deletion error:', error);
+                showNotification('Error submitting deletion request. Please try again.', 'error');
+            });
+        }
+
+        function cancelDeletionRequest(requestId) {
+            if (!confirm('Are you sure you want to cancel your account deletion request?')) {
+                return;
+            }
+
+            fetch(`/api/user/cancel-deletion-request/${requestId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Deletion request cancelled successfully.', 'success');
+                    loadDeletionRequests(); // Refresh the list
+                } else {
+                    showNotification(data.error || 'Error cancelling deletion request', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Cancel deletion request error:', error);
+                showNotification('Error cancelling deletion request. Please try again.', 'error');
+            });
+        }
+
+        function loadDeletionRequests() {
+            fetch('/api/user/deletion-requests', {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('deletionRequestsList');
+                
+                if (data.success && data.requests.length > 0) {
+                    container.innerHTML = `
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Date</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.requests.map(request => `
+                                        <tr class="border-b hover:bg-gray-50">
+                                            <td class="px-4 py-3 text-sm">${request.email}</td>
+                                            <td class="px-4 py-3 text-sm text-gray-500">${new Date(request.created_at).toLocaleDateString()}</td>
+                                            <td class="px-4 py-3">
+                                                <span class="px-2 py-1 text-xs rounded-full ${getStatusColor(request.status)}">
+                                                    ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                                                </span>
+                                                ${request.cancelled_at ? `<div class="text-xs text-gray-500 mt-1">Cancelled: ${new Date(request.cancelled_at).toLocaleDateString()}</div>` : ''}
+                                            </td>
+                                            <td class="px-4 py-3 text-sm max-w-xs">
+                                                <div class="truncate" title="${request.reason}">${request.reason}</div>
+                                                ${request.denial_reason ? `<div class="text-xs text-red-600 mt-1">Denial: ${request.denial_reason}</div>` : ''}
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                ${request.status === 'pending' ? `
+                                                    <button onclick="cancelDeletionRequest('${request.$id}')" 
+                                                            class="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded transition-colors">
+                                                        Cancel
+                                                    </button>
+                                                ` : '-'}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="text-center py-8">
+                            <div class="text-[#604e97] mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48px" height="48px" fill="currentColor" viewBox="0 0 256 256" class="mx-auto">
+                                    <path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM96,152H160a8,8,0,0,1,8,8v16H88V160A8,8,0,0,1,96,152ZM48,48H208V136H173.33l-21.34,21.34a8,8,0,0,1-11.31,0L128,144.69l-12.68,12.65a8,8,0,0,1-11.31,0L82.67,136H48Z"></path>
+                                </svg>
+                            </div>
+                            <p class="text-[#604e97] text-base font-normal leading-normal">No deletion requests found.</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Load deletion requests error:', error);
+                document.getElementById('deletionRequestsList').innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-red-600">Error loading deletion requests.</p>
+                    </div>
+                `;
+            });
+        }
+
+        function getStatusColor(status) {
+            switch(status) {
+                case 'pending': return 'bg-yellow-100 text-yellow-800';
+                case 'approved': return 'bg-green-100 text-green-800';
+                case 'denied': return 'bg-red-100 text-red-800';
+                case 'cancelled': return 'bg-gray-100 text-gray-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('deletionModal');
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeDeletionModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

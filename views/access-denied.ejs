@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="" />
+    <link
+      rel="stylesheet"
+      as="style"
+      onload="this.rel='stylesheet'"
+      href="https://fonts.googleapis.com/css2?display=swap&amp;family=Inter%3Awght%40400%3B500%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900"
+    />
+    <title><%= title %></title>
+    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script type="module" src="/discord-auth.js"></script>
+</head>
+<body>
+    <div class="relative flex size-full min-h-screen flex-col bg-[#f9f8fc] group/design-root overflow-x-hidden" style='font-family: Inter, "Noto Sans", sans-serif;'>
+        <div class="layout-container flex h-full grow flex-col">
+            <!-- Header -->
+            <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#eae7f3] px-10 py-3">
+                <div class="flex items-center gap-4 text-[#110e1b]">
+                    <a href="/" class="text-[#110e1b] text-lg font-bold leading-tight tracking-[-0.015em]">my-cool.space</a>
+                </div>
+                <div class="flex flex-1 justify-end gap-8">
+                    <div class="flex items-center gap-9"></div>
+                    <div class="flex gap-2">
+                        <% if (user) { %>
+                            <span class="text-[#604e97] text-sm font-normal leading-normal">Hello, <span class="font-bold text-[#110e1b]"><%= user.username %>!</span></span>
+                            <a href="/dashboard" 
+                               class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-[#4c19e5] text-[#f9f8fc] gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
+                                <span class="truncate">Dashboard</span>
+                            </a>
+                            <button onclick="logoutDiscord()" 
+                                    class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-[#eae7f3] text-[#110e1b] gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
+                                <span class="truncate">Logout</span>
+                            </button>
+                        <% } else { %>
+                            <button id="discord-login-btn"
+                                    class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-[#4c19e5] text-[#f9f8fc] gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
+                                <span class="truncate">Login with Discord</span>
+                            </button>
+                        <% } %>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <div class="flex flex-1 justify-center py-5">
+                <div class="layout-content-container flex flex-col max-w-[640px] flex-1 px-10">
+                    <div class="flex min-h-[480px] flex-col gap-6 items-center justify-center p-4">
+                        <!-- Warning Icon -->
+                        <div class="text-red-600" data-icon="ShieldExclamation" data-size="64px" data-weight="regular">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64px" height="64px" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M208,40H48A16,16,0,0,0,32,56v58.77c0,89.61,75.82,119.34,91,124.39a15.53,15.53,0,0,0,10,0c15.2-5.05,91-34.78,91-124.39V56A16,16,0,0,0,208,40ZM128,144a12,12,0,1,1,12-12A12,12,0,0,1,128,144Zm8-40a8,8,0,0,1-16,0V80a8,8,0,0,1,16,0Z"></path>
+                            </svg>
+                        </div>
+
+                        <!-- Error Message -->
+                        <div class="flex flex-col gap-2 text-center">
+                            <h1 class="text-[#110e1b] text-4xl font-black leading-tight tracking-[-0.033em]">
+                                Access Denied
+                            </h1>
+                            <h2 class="text-[#604e97] text-base font-normal leading-normal">
+                                You don't have permission to access this resource. This area is restricted to authorized administrators only.
+                            </h2>
+                        </div>
+
+                        <!-- Error Details -->
+                        <% if (typeof error !== 'undefined' && error) { %>
+                            <div class="rounded-lg border border-red-200 bg-red-50 p-4 w-full max-w-md">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        <div class="text-red-600" data-icon="Warning" data-size="20px" data-weight="regular">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">
+                                                <path d="M236.8,188.09,149.35,36.22h0a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.35,24.35,0,0,0,40.55,224h174.9a24.35,24.35,0,0,0,21.33-12.19A23.51,23.51,0,0,0,236.8,188.09ZM120,104a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm8,88a12,12,0,1,1,12-12A12,12,0,0,1,128,192Z"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h3 class="text-sm font-medium text-red-800">Error Details</h3>
+                                        <p class="text-sm text-red-700 mt-1"><%= error %></p>
+                                    </div>
+                                </div>
+                            </div>
+                        <% } %>
+
+                        <!-- Action Buttons -->
+                        <div class="flex gap-3">
+                            <a href="/" 
+                               class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#4c19e5] text-[#f9f8fc] text-sm font-bold leading-normal tracking-[0.015em]">
+                                <div class="text-[#f9f8fc] mr-2" data-icon="House" data-size="16px" data-weight="regular">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16px" height="16px" fill="currentColor" viewBox="0 0 256 256">
+                                        <path d="M218.83,103.77l-80-75.48a1.14,1.14,0,0,1-.11-.11,16,16,0,0,0-21.53,0l-.11.11L37.17,103.77A16,16,0,0,0,32,115.55V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V160a8,8,0,0,1,8-8h16a8,8,0,0,1,8,8v48a16,16,0,0,0,16,16h32a16,16,0,0,0,16-16V115.55A16,16,0,0,0,218.83,103.77ZM208,208H192V160a24,24,0,0,0-24-24H152a24,24,0,0,0-24,24v48H112V115.55l.11-.1L192,40.69l79.9,74.76.11.1V208Z"></path>
+                                    </svg>
+                                </div>
+                                <span class="truncate">Go Home</span>
+                            </a>
+                            
+                            <% if (user) { %>
+                                <a href="/dashboard" 
+                                   class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#eae7f3] text-[#110e1b] text-sm font-bold leading-normal tracking-[0.015em]">
+                                    <div class="text-[#110e1b] mr-2" data-icon="SquaresFour" data-size="16px" data-weight="regular">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16px" height="16px" fill="currentColor" viewBox="0 0 256 256">
+                                            <path d="M104,48H56A16,16,0,0,0,40,64v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V64A16,16,0,0,0,104,48ZM56,112V64h48v48ZM200,48H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V64A16,16,0,0,0,200,48Zm-48,64V64h48v48ZM104,144H56a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V160A16,16,0,0,0,104,144ZM56,208V160h48v48ZM200,144H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V160A16,16,0,0,0,200,144Zm-48,64V160h48v48Z"></path>
+                                        </svg>
+                                    </div>
+                                    <span class="truncate">My Dashboard</span>
+                                </a>
+                            <% } else { %>
+                                <button id="access-denied-login"
+                                        class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#eae7f3] text-[#110e1b] text-sm font-bold leading-normal tracking-[0.015em]">
+                                    <div class="text-[#110e1b] mr-2" data-icon="SignIn" data-size="16px" data-weight="regular">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16px" height="16px" fill="currentColor" viewBox="0 0 256 256">
+                                            <path d="M141.66,133.66l-40,40A8,8,0,0,1,90.34,162.34L124.69,128,90.34,93.66a8,8,0,0,1,11.32-11.32l40,40A8,8,0,0,1,141.66,133.66ZM192,32H136a8,8,0,0,0,0,16h56V208H136a8,8,0,0,0,0,16h56a16,16,0,0,0,16-16V48A16,16,0,0,0,192,32Z"></path>
+                                        </svg>
+                                    </div>
+                                    <span class="truncate">Login with Discord</span>
+                                </button>
+                            <% } %>
+                        </div>
+
+                        <!-- Help Text -->
+                        <div class="rounded-lg border border-[#d6d0e7] bg-blue-50 p-4 w-full max-w-md">
+                            <h3 class="text-sm font-medium text-blue-800 mb-2">ℹ️ Need Admin Access?</h3>
+                            <p class="text-sm text-blue-700">
+                                Need admin access? Contact the site administrator or check your permissions.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="flex justify-center">
+                <div class="flex max-w-[960px] flex-1 flex-col">
+                    <footer class="flex flex-col gap-6 px-5 py-10 text-center @container">
+                        <p class="text-[#604e97] text-base font-normal leading-normal">© 2025 my-cool.space. All rights reserved.</p>
+                    </footer>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // Add click handler for the access denied login button
+        document.addEventListener('DOMContentLoaded', function() {
+            const accessDeniedLoginBtn = document.getElementById('access-denied-login');
+            if (accessDeniedLoginBtn && window.loginWithDiscord) {
+                accessDeniedLoginBtn.addEventListener('click', window.loginWithDiscord);
+            }
+        });
+    </script>
+</body>
+</html>

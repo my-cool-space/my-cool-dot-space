@@ -1,0 +1,50 @@
+{
+  "name": "my-cool-dot-space",
+  "version": "1.0.0",
+  "description": "A web service for free subdomain registration at my-cool.space",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "build": "tailwindcss -i ./public/input.css -o ./public/style.css",
+    "build:watch": "tailwindcss -i ./public/input.css -o ./public/style.css --watch",
+    "build:prod": "NODE_ENV=production tailwindcss -i ./public/input.css -o ./public/style.css --minify",
+    "docker:build": "docker build -t my-cool-space .",
+    "docker:run": "docker run -p 3000:3000 --env-file .env my-cool-space",
+    "docker:dev": "docker-compose up --build",
+    "docker:prod": "docker-compose -f docker-compose.prod.yml up --build -d",
+    "audit": "npm audit",
+    "audit:fix": "npm audit fix",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "subdomain",
+    "dns",
+    "discord",
+    "appwrite"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "discord-oauth2": "^2.12.1",
+    "dotenv": "^16.3.1",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.5.1",
+    "express-session": "^1.18.1",
+    "helmet": "^8.1.0",
+    "node-appwrite": "^13.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "tailwindcss": "^3.3.3",
+    "@tailwindcss/forms": "^0.5.7",
+    "@tailwindcss/typography": "^0.5.10"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

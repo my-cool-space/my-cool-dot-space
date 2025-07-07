@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    env_file:
+      - .env.production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "const http = require('http'); const options = { hostname: 'localhost', port: 3000, path: '/api/status', timeout: 8000 }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.on('timeout', () => process.exit(1)); req.end();"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+        compress: "true"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /app/logs:noexec,nosuid,size=100m
+      - /app/tmp:noexec,nosuid,size=100m
+      - /tmp:noexec,nosuid,size=100m
+    volumes:
+      - type: tmpfs
+        target: /app/logs
+        tmpfs:
+          size: 100m
+      - type: tmpfs  
+        target: /app/tmp
+        tmpfs:
+          size: 100m
+    networks:
+      - app-network
+
+  # Optional: Redis for session storage (recommended for production)
+  # redis:
+  #   image: redis:7-alpine
+  #   restart: unless-stopped
+  #   command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+  #   volumes:
+  #     - redis_data:/data
+  #   networks:
+  #     - app-network
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 30s
+  #     timeout: 3s
+  #     retries: 3
+
+  # Optional: Nginx reverse proxy with SSL
+  # nginx:
+  #   image: nginx:alpine
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/ssl/certs:ro
+  #     - nginx_logs:/var/log/nginx
+  #   depends_on:
+  #     - app
+  #   restart: unless-stopped
+  #   networks:
+  #     - app-network
+  #   healthcheck:
+  #     test: ["CMD", "nginx", "-t"]
+  #     interval: 30s
+  #     timeout: 3s
+  #     retries: 3
+
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# volumes:
+#   redis_data:
+#   nginx_logs:
