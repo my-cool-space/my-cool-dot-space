@@ -9,6 +9,37 @@ require('dotenv').config();
 const appwriteClient = require('./src/appwrite');
 const DiscordOAuth = require('./src/discord-oauth');
 
+// hCaptcha verification function
+async function verifyHCaptcha(token) {
+  if (!process.env.HCAPTCHA_SECRET_KEY) {
+    console.warn('⚠️ hCaptcha secret key not configured, skipping verification');
+    return true; // Skip verification if not configured
+  }
+  
+  if (!token) {
+    return false;
+  }
+  
+  try {
+    const response = await fetch('https://hcaptcha.com/siteverify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        secret: process.env.HCAPTCHA_SECRET_KEY,
+        response: token,
+      }),
+    });
+    
+    const data = await response.json();
+    return data.success === true;
+  } catch (error) {
+    console.error('hCaptcha verification failed:', error);
+    return false;
+  }
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -324,7 +355,8 @@ app.get('/dashboard', (req, res) => {
   
   res.render('dashboard', { 
     title: 'Dashboard - my-cool.space',
-    user: req.session.user
+    user: req.session.user,
+    process: { env: { HCAPTCHA_SITE_KEY: process.env.HCAPTCHA_SITE_KEY } }
   });
 });
 
@@ -402,7 +434,8 @@ app.get('/report-abuse', (req, res) => {
   
   res.render('report-abuse', { 
     title: 'Report Abuse - my-cool.space',
-    user: req.session.user || null
+    user: req.session.user || null,
+    process: { env: { HCAPTCHA_SITE_KEY: process.env.HCAPTCHA_SITE_KEY } }
   });
 });
 
@@ -826,9 +859,26 @@ app.post('/api/report-abuse', async (req, res) => {
   console.log('📢 [ABUSE] === POST /api/report-abuse ===');
   
   try {
-    const { reporterEmail, reportedSubdomain, abuseType, description, evidenceUrl } = req.body;
+    const { reporterEmail, reportedSubdomain, abuseType, description, evidenceUrl, 'h-captcha-response': hcaptchaToken } = req.body;
     
     console.log('📢 [ABUSE] Abuse report submission attempt');
+    
+    // Verify hCaptcha
+    const isHCaptchaValid = await verifyHCaptcha(hcaptchaToken);
+    if (!isHCaptchaValid) {
+      console.log('📢 [ABUSE] hCaptcha verification failed');
+      logUserAction(req.session?.user, 'abuse_report_failed', { 
+        reason: 'hcaptcha_verification_failed',
+        reporterEmail,
+        reportedSubdomain,
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      return res.status(400).json({ 
+        error: 'Security verification failed. Please complete the captcha and try again.' 
+      });
+    }
+    
     logUserAction(req.session?.user, 'abuse_report_attempt', { 
       reporterEmail,
       reportedSubdomain,
@@ -1984,8 +2034,22 @@ app.post('/api/request-subdomain', subdomainLimiter, async (req, res) => {
       });
     }
     
-    const { subdomain, targetUrl, recordType } = req.body;
+    const { subdomain, targetUrl, recordType, 'h-captcha-response': hcaptchaToken } = req.body;
     console.log('🌐 [SUBDOMAIN] Parsed request data:', { subdomain, targetUrl, recordType });
+    
+    // Verify hCaptcha
+    const isHCaptchaValid = await verifyHCaptcha(hcaptchaToken);
+    if (!isHCaptchaValid) {
+      console.log('🌐 [SUBDOMAIN] hCaptcha verification failed');
+      logUserAction(req.session.user, 'subdomain_request_failed', { 
+        reason: 'hcaptcha_verification_failed',
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      return res.status(400).json({ 
+        error: 'Security verification failed. Please complete the captcha and try again.' 
+      });
+    }
     
     logUserAction(req.session.user, 'subdomain_request_attempt', { 
       subdomain,

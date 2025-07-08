@@ -113,6 +113,10 @@ DISCORD_REDIRECT_URI=http://localhost:3000/auth/discord/callback
 PORKBUN_API_KEY=your-porkbun-api-key
 PORKBUN_SECRET_KEY=your-porkbun-secret-key
 BASE_DOMAIN=your-domain.com
+
+# hCaptcha (Optional - for spam protection)
+HCAPTCHA_SITE_KEY=your-hcaptcha-site-key
+HCAPTCHA_SECRET_KEY=your-hcaptcha-secret-key
 ```
 
 ### Important Notes
@@ -138,6 +142,17 @@ BASE_DOMAIN=your-domain.com
 1. Register your domain with Porkbun
 2. Enable API access in your Porkbun account
 3. Generate API keys and add them to your `.env` file
+
+### hCaptcha Setup (Optional)
+
+hCaptcha provides spam protection for domain requests and abuse reports:
+
+1. Go to [hCaptcha Dashboard](https://dashboard.hcaptcha.com/)
+2. Create a new site
+3. Copy the Site Key and Secret Key to your `.env` file
+4. If not configured, the system will skip captcha verification (useful for development)
+
+**Note**: Without hCaptcha, forms are more vulnerable to automated spam and abuse.
 4. Ensure your domain's nameservers are set to Porkbun's
 
 ### Appwrite Setup

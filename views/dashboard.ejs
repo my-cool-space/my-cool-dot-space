@@ -1,4 +1,8 @@
-<!DOCTYPE html>
+<!DOCTYPE     <title><%= title %></title>
+    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+    <script src="/appwrite-auth.js"></script>>
 <html>
 <head>
     <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="" />
@@ -147,6 +151,17 @@
                                         <li>• You'll be able to access your site at <code id="previewUrl" class="bg-blue-100 px-1 rounded">subdomain.my-cool.space</code></li>
                                         <li>• DNS propagation usually takes 5-15 minutes</li>
                                     </ul>
+                                </div>
+                                
+                                <!-- hCaptcha -->
+                                <div class="flex flex-col gap-2">
+                                    <label class="text-[#110e1b] text-sm font-medium leading-normal">
+                                        Security Verification *
+                                    </label>
+                                    <div class="h-captcha" data-sitekey="<%= process.env.HCAPTCHA_SITE_KEY || '10000000-ffff-ffff-ffff-000000000001' %>"></div>
+                                    <p class="text-[#604e97] text-xs font-normal leading-normal">
+                                        Please complete the security verification to prevent automated abuse.
+                                    </p>
                                 </div>
                                 
                                 <button 
@@ -306,6 +321,16 @@
                 const form = e.target;
                 const formData = new FormData(form);
                 const data = Object.fromEntries(formData);
+                
+                // Get hCaptcha response
+                const hcaptchaResponse = hcaptcha.getResponse();
+                if (!hcaptchaResponse) {
+                    document.getElementById('errorMessage').textContent = 'Please complete the security verification.';
+                    document.getElementById('error').classList.remove('hidden');
+                    return;
+                }
+                data['h-captcha-response'] = hcaptchaResponse;
+                
                 console.log('Form data:', data);
                 
                 // Show loading
@@ -328,6 +353,7 @@
                     if (response.ok) {
                         document.getElementById('success').classList.remove('hidden');
                         form.reset();
+                        hcaptcha.reset(); // Reset hCaptcha
                         loadMyRequests(); // Refresh the requests list
                     } else {
                         throw new Error(result.error || 'Unknown error');
@@ -346,6 +372,7 @@
                 } finally {
                     document.getElementById('loading').classList.add('hidden');
                     form.classList.remove('hidden');
+                    hcaptcha.reset(); // Reset hCaptcha on error
                 }
             });
 
