@@ -160,7 +160,9 @@
                                     <label class="text-[#110e1b] text-sm font-medium">
                                         Security Verification *
                                     </label>
-                                    <div id="hcaptcha-container"></div>
+                                    <div id="hcaptcha-container" style="min-height: 78px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; display: flex; align-items: center; justify-content: center; padding: 10px;">
+                                        <div style="color: #6c757d; font-size: 14px;">Loading security verification...</div>
+                                    </div>
                                     <p class="text-xs text-[#604e97]">
                                         Please complete the security verification to prevent automated spam.
                                     </p>
@@ -211,22 +213,94 @@
 
     <script>
         let reportWidgetId = null;
+        const HCAPTCHA_SITE_KEY = '<%= hcaptchaSiteKey %>';
 
         // Callback function when hCaptcha API is loaded
         function onHCaptchaLoaded() {
-            console.log('hCaptcha API loaded for report abuse form');
+            console.log('🔥 hCaptcha API loaded for report abuse form');
+            console.log('🔑 Site key:', HCAPTCHA_SITE_KEY);
+            
+            setTimeout(() => {
+                renderReportHCaptcha();
+            }, 100);
+        }
+        
+        function renderReportHCaptcha() {
             try {
+                const container = document.getElementById('hcaptcha-container');
+                if (!container) {
+                    console.error('❌ hCaptcha container not found in report form!');
+                    return;
+                }
+                
+                console.log('📦 Found report hCaptcha container:', container);
+                console.log('🌐 hCaptcha object:', typeof hcaptcha);
+                
+                if (typeof hcaptcha === 'undefined') {
+                    console.error('❌ hCaptcha not loaded yet, retrying...');
+                    setTimeout(renderReportHCaptcha, 500);
+                    return;
+                }
+                
+                // Clear loading text and reset styles
+                container.innerHTML = '';
+                container.style.background = '';
+                container.style.border = '';
+                container.style.alignItems = '';
+                container.style.justifyContent = '';
+                container.style.padding = '';
+                
                 reportWidgetId = hcaptcha.render('hcaptcha-container', {
-                    sitekey: '<%= hcaptchaSiteKey %>',
+                    sitekey: HCAPTCHA_SITE_KEY,
+                    size: 'normal',
+                    theme: 'light',
                     callback: function(token) {
-                        console.log('hCaptcha completed for report form:', token);
+                        console.log('✅ Report hCaptcha completed with token:', token);
+                    },
+                    'expired-callback': function() {
+                        console.log('⏰ Report hCaptcha expired');
+                    },
+                    'error-callback': function(error) {
+                        console.log('❌ Report hCaptcha error:', error);
                     }
                 });
-                console.log('hCaptcha widget rendered with ID:', reportWidgetId);
+                console.log('🎯 Report hCaptcha widget rendered with ID:', reportWidgetId);
+                
             } catch (error) {
-                console.error('Error rendering hCaptcha widget:', error);
+                console.error('💥 Error rendering report hCaptcha:', error);
+                
+                // Show error in container
+                const container = document.getElementById('hcaptcha-container');
+                if (container) {
+                    container.innerHTML = '<div style="color: #dc3545; font-size: 14px;">Error loading security verification. Please refresh the page.</div>';
+                }
+                
+                setTimeout(() => {
+                    console.log('🔄 Retrying report hCaptcha render...');
+                    renderReportHCaptcha();
+                }, 1000);
             }
         }
+        
+        // Also try to render on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Report abuse page loaded');
+            console.log('🔍 hCaptcha available:', typeof hcaptcha !== 'undefined');
+            
+            if (typeof hcaptcha !== 'undefined') {
+                console.log('⚡ hCaptcha already loaded, rendering immediately...');
+                renderReportHCaptcha();
+            } else {
+                console.log('⏳ Waiting for hCaptcha to load...');
+                // Set up a fallback
+                setTimeout(() => {
+                    if (typeof hcaptcha !== 'undefined' && !reportWidgetId) {
+                        console.log('🔄 Fallback: rendering report hCaptcha...');
+                        renderReportHCaptcha();
+                    }
+                }, 2000);
+            }
+        });
 
         document.getElementById('abuseReportForm').addEventListener('submit', async function(e) {
             e.preventDefault();

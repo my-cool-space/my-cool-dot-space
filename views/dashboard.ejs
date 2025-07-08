@@ -157,7 +157,9 @@
                                     <label class="text-[#110e1b] text-sm font-medium leading-normal">
                                         Security Verification *
                                     </label>
-                                    <div id="hcaptcha-container"></div>
+                                    <div id="hcaptcha-container" style="min-height: 78px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; display: flex; align-items: center; justify-content: center; padding: 10px;">
+                                        <div style="color: #6c757d; font-size: 14px;">Loading security verification...</div>
+                                    </div>
                                     <p class="text-[#604e97] text-xs font-normal leading-normal">
                                         Please complete the security verification to prevent automated abuse.
                                     </p>
@@ -232,33 +234,99 @@
         let hcaptchaWidgetId = null;
         const HCAPTCHA_SITE_KEY = '<%= hcaptchaSiteKey %>';
         
-        // Callback for when hCaptcha is loaded
+        // Ensure hCaptcha loads
         window.onHCaptchaLoaded = function() {
-            console.log('hCaptcha API loaded successfully');
-            console.log('Site key:', HCAPTCHA_SITE_KEY);
+            console.log('🔥 hCaptcha API loaded successfully');
+            console.log('🔑 Site key:', HCAPTCHA_SITE_KEY);
             
-            // Render hCaptcha widget
+            // Force render hCaptcha widget
+            setTimeout(() => {
+                renderHCaptcha();
+            }, 100);
+        };
+        
+        function renderHCaptcha() {
             try {
+                const container = document.getElementById('hcaptcha-container');
+                if (!container) {
+                    console.error('❌ hCaptcha container not found!');
+                    return;
+                }
+                
+                console.log('📦 Found hCaptcha container:', container);
+                console.log('🌐 hCaptcha object:', typeof hcaptcha);
+                
+                if (typeof hcaptcha === 'undefined') {
+                    console.error('❌ hCaptcha not loaded yet, retrying...');
+                    setTimeout(renderHCaptcha, 500);
+                    return;
+                }
+                
+                // Clear loading text and reset styles
+                container.innerHTML = '';
+                container.style.background = '';
+                container.style.border = '';
+                container.style.alignItems = '';
+                container.style.justifyContent = '';
+                container.style.padding = '';
+                
                 hcaptchaWidgetId = hcaptcha.render('hcaptcha-container', {
                     sitekey: HCAPTCHA_SITE_KEY,
                     size: 'normal',
-                    theme: 'light'
+                    theme: 'light',
+                    callback: function(token) {
+                        console.log('✅ hCaptcha completed with token:', token);
+                    },
+                    'expired-callback': function() {
+                        console.log('⏰ hCaptcha expired');
+                    },
+                    'error-callback': function(error) {
+                        console.log('❌ hCaptcha error:', error);
+                    }
                 });
-                console.log('hCaptcha widget rendered with ID:', hcaptchaWidgetId);
+                console.log('🎯 hCaptcha widget rendered with ID:', hcaptchaWidgetId);
+                
             } catch (error) {
-                console.error('Error rendering hCaptcha:', error);
+                console.error('💥 Error rendering hCaptcha:', error);
+                
+                // Show error in container
+                const container = document.getElementById('hcaptcha-container');
+                if (container) {
+                    container.innerHTML = '<div style="color: #dc3545; font-size: 14px;">Error loading security verification. Please refresh the page.</div>';
+                }
+                
+                // Fallback: try again in a moment
+                setTimeout(() => {
+                    console.log('🔄 Retrying hCaptcha render...');
+                    renderHCaptcha();
+                }, 1000);
             }
-        };
+        }
         
         // Debug: Check if hCaptcha loaded
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('Dashboard loaded for user');
-            console.log('hCaptcha available:', typeof hcaptcha !== 'undefined');
-            console.log('hCaptcha site key:', HCAPTCHA_SITE_KEY);
+            console.log('🚀 Dashboard loaded for user');
+            console.log('🔍 hCaptcha available:', typeof hcaptcha !== 'undefined');
+            console.log('🔑 hCaptcha site key:', HCAPTCHA_SITE_KEY);
             
             // Check if hCaptcha container is present
             const hcaptchaContainer = document.getElementById('hcaptcha-container');
-            console.log('hCaptcha container found:', !!hcaptchaContainer);
+            console.log('📦 hCaptcha container found:', !!hcaptchaContainer);
+            
+            // Try to render immediately if hCaptcha is already loaded
+            if (typeof hcaptcha !== 'undefined') {
+                console.log('⚡ hCaptcha already loaded, rendering immediately...');
+                renderHCaptcha();
+            } else {
+                console.log('⏳ Waiting for hCaptcha to load...');
+                // Set up a fallback in case the callback doesn't fire
+                setTimeout(() => {
+                    if (typeof hcaptcha !== 'undefined' && !hcaptchaWidgetId) {
+                        console.log('🔄 Fallback: rendering hCaptcha...');
+                        renderHCaptcha();
+                    }
+                }, 2000);
+            }
             
             // Load admin settings first, then set up dashboard
             loadAdminSettings().then(() => {
