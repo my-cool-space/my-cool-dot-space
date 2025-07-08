@@ -157,9 +157,13 @@
                                     <label class="text-[#110e1b] text-sm font-medium leading-normal">
                                         Security Verification *
                                     </label>
+<<<<<<< HEAD
                                     <div id="hcaptcha-container" style="min-height: 78px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; display: flex; align-items: center; justify-content: center; padding: 10px;">
                                         <div style="color: #6c757d; font-size: 14px;">Loading security verification...</div>
                                     </div>
+=======
+                                    <div id="hcaptcha-container"></div>
+>>>>>>> origin/main
                                     <p class="text-[#604e97] text-xs font-normal leading-normal">
                                         Please complete the security verification to prevent automated abuse.
                                     </p>
@@ -234,6 +238,7 @@
         let hcaptchaWidgetId = null;
         const HCAPTCHA_SITE_KEY = '<%= hcaptchaSiteKey %>';
         
+<<<<<<< HEAD
         // Ensure hCaptcha loads
         window.onHCaptchaLoaded = function() {
             console.log('🔥 hCaptcha API loaded successfully');
@@ -327,6 +332,35 @@
                     }
                 }, 2000);
             }
+=======
+        // Callback for when hCaptcha is loaded
+        window.onHCaptchaLoaded = function() {
+            console.log('hCaptcha API loaded successfully');
+            console.log('Site key:', HCAPTCHA_SITE_KEY);
+            
+            // Render hCaptcha widget
+            try {
+                hcaptchaWidgetId = hcaptcha.render('hcaptcha-container', {
+                    sitekey: HCAPTCHA_SITE_KEY,
+                    size: 'normal',
+                    theme: 'light'
+                });
+                console.log('hCaptcha widget rendered with ID:', hcaptchaWidgetId);
+            } catch (error) {
+                console.error('Error rendering hCaptcha:', error);
+            }
+        };
+        
+        // Debug: Check if hCaptcha loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Dashboard loaded for user');
+            console.log('hCaptcha available:', typeof hcaptcha !== 'undefined');
+            console.log('hCaptcha site key:', HCAPTCHA_SITE_KEY);
+            
+            // Check if hCaptcha container is present
+            const hcaptchaContainer = document.getElementById('hcaptcha-container');
+            console.log('hCaptcha container found:', !!hcaptchaContainer);
+>>>>>>> origin/main
             
             // Load admin settings first, then set up dashboard
             loadAdminSettings().then(() => {

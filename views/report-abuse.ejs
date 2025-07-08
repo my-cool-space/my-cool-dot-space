@@ -160,9 +160,13 @@
                                     <label class="text-[#110e1b] text-sm font-medium">
                                         Security Verification *
                                     </label>
+<<<<<<< HEAD
                                     <div id="hcaptcha-container" style="min-height: 78px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; display: flex; align-items: center; justify-content: center; padding: 10px;">
                                         <div style="color: #6c757d; font-size: 14px;">Loading security verification...</div>
                                     </div>
+=======
+                                    <div id="hcaptcha-container"></div>
+>>>>>>> origin/main
                                     <p class="text-xs text-[#604e97]">
                                         Please complete the security verification to prevent automated spam.
                                     </p>
@@ -213,6 +217,7 @@
 
     <script>
         let reportWidgetId = null;
+<<<<<<< HEAD
         const HCAPTCHA_SITE_KEY = '<%= hcaptchaSiteKey %>';
 
         // Callback function when hCaptcha API is loaded
@@ -301,6 +306,24 @@
                 }, 2000);
             }
         });
+=======
+
+        // Callback function when hCaptcha API is loaded
+        function onHCaptchaLoaded() {
+            console.log('hCaptcha API loaded for report abuse form');
+            try {
+                reportWidgetId = hcaptcha.render('hcaptcha-container', {
+                    sitekey: '<%= hcaptchaSiteKey %>',
+                    callback: function(token) {
+                        console.log('hCaptcha completed for report form:', token);
+                    }
+                });
+                console.log('hCaptcha widget rendered with ID:', reportWidgetId);
+            } catch (error) {
+                console.error('Error rendering hCaptcha widget:', error);
+            }
+        }
+>>>>>>> origin/main
 
         document.getElementById('abuseReportForm').addEventListener('submit', async function(e) {
             e.preventDefault();
