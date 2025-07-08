@@ -204,16 +204,16 @@ const subdomainLimiter = rateLimit({
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key-change-this',
-  resave: false, // Don't save session if unmodified
-  saveUninitialized: false, // Don't create session until something stored
+  resave: true, // Force session save on each request (safer for authentication)
+  saveUninitialized: true, // Create session for all requests (required for OAuth)
   rolling: true, // Reset expiration on each request
   cookie: {
     secure: process.env.NODE_ENV === 'production' && !process.env.DISABLE_HTTPS, // Only require HTTPS in production
     httpOnly: true, // Prevent JS access to cookies
     maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax', // Use lax for better compatibility
+    sameSite: 'lax', // Use lax for OAuth compatibility
     path: '/',
-    domain: process.env.NODE_ENV === 'production' ? '.my-cool.space' : undefined, // Allow subdomain sharing in production
+    // Don't set domain in production to avoid cross-domain issues
   },
   name: 'mycoolspace.sid', // Custom session cookie name
   proxy: process.env.NODE_ENV === 'production', // Trust proxy for secure cookies
@@ -225,6 +225,21 @@ if (process.env.NODE_ENV === 'production') {
   console.warn('⚠️  [SESSION] Consider using Redis or another persistent session store for production.');
   console.warn('⚠️  [SESSION] Sessions will be lost when the server restarts.');
 }
+
+// Session debugging middleware
+app.use((req, res, next) => {
+  // Only log session info for authentication-related routes
+  if (req.path.includes('/auth/') || req.path.includes('/dashboard') || req.path.includes('/api/')) {
+    console.log(`🔍 [SESSION DEBUG] ${req.method} ${req.path}`);
+    console.log(`🔍 [SESSION DEBUG] - Session exists: ${!!req.session}`);
+    console.log(`🔍 [SESSION DEBUG] - Session ID: ${req.sessionID}`);
+    console.log(`🔍 [SESSION DEBUG] - Has user: ${!!(req.session && req.session.user)}`);
+    if (req.session && req.session.user) {
+      console.log(`🔍 [SESSION DEBUG] - Username: ${req.session.user.username}`);
+    }
+  }
+  next();
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -680,6 +695,63 @@ app.get('/auth/logout', (req, res) => {
     }
     res.clearCookie('mycoolspace.sid'); // Clear our custom session cookie name
     res.redirect('/');
+  });
+});
+
+// Debug route for session troubleshooting (remove in production)
+app.get('/debug/session', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).send('Not found');
+  }
+  
+  console.log('🔍 [DEBUG] Session debug requested');
+  
+  const sessionInfo = {
+    sessionExists: !!req.session,
+    sessionID: req.sessionID,
+    hasUser: !!(req.session && req.session.user),
+    user: req.session?.user ? {
+      username: req.session.user.username,
+      email: req.session.user.email,
+      id: req.session.user.id
+    } : null,
+    cookie: req.session?.cookie,
+    fullSession: req.session,
+    headers: {
+      cookie: req.headers.cookie,
+      userAgent: req.headers['user-agent']
+    }
+  };
+  
+  res.json({
+    message: 'Session Debug Information',
+    timestamp: new Date().toISOString(),
+    ...sessionInfo
+  });
+});
+
+// Emergency session reset route (development only)
+app.get('/debug/reset-session', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).send('Not found');
+  }
+  
+  console.log('🔍 [DEBUG] Session reset requested');
+  
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('🔍 [DEBUG] Session reset error:', err);
+      return res.json({ success: false, error: err.message });
+    }
+    
+    res.clearCookie('mycoolspace.sid');
+    console.log('🔍 [DEBUG] Session reset successfully');
+    
+    res.json({ 
+      success: true, 
+      message: 'Session reset successfully. Please try logging in again.',
+      timestamp: new Date().toISOString()
+    });
   });
 });
 

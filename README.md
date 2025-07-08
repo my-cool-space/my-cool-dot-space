@@ -268,6 +268,10 @@ If users are redirected to the home page after successful Discord OAuth:
 
 To enable additional debugging output, you can check the server logs for detailed session and authentication information.
 
+**Development Debug Routes** (only available when `NODE_ENV != production`):
+- `GET /debug/session` - View current session information and debugging data
+- `GET /debug/reset-session` - Emergency session reset (clears current session)
+
 ### Session Persistence in Production
 
 **Important**: The default MemoryStore session configuration is not suitable for production as it will leak memory and not scale past a single process. For production deployments, consider using a persistent session store like Redis:
