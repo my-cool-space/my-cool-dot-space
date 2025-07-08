@@ -190,13 +190,13 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com", "https://js.hcaptcha.com", "https://cdn.jsdelivr.net"],
       scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers (onclick, etc.)
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:"],
-      connectSrc: ["'self'"],
-      frameSrc: ["'none'"],
+      connectSrc: ["'self'", "https://hcaptcha.com", "https://fra.cloud.appwrite.io", "https://*.appwrite.io"],
+      frameSrc: ["'self'", "https://hcaptcha.com", "https://*.hcaptcha.com"],
       objectSrc: ["'none'"],
       mediaSrc: ["'none'"],
       baseUri: ["'self'"]
