@@ -204,15 +204,16 @@ const subdomainLimiter = rateLimit({
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key-change-this',
-  resave: true, // Force session save on each request
-  saveUninitialized: true, // Save uninitialized sessions
+  resave: false, // Don't save session if unmodified
+  saveUninitialized: false, // Don't create session until something stored
   rolling: true, // Reset expiration on each request
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // Only send cookie over HTTPS
+    secure: process.env.NODE_ENV === 'production' && !process.env.DISABLE_HTTPS, // Only require HTTPS in production
     httpOnly: true, // Prevent JS access to cookies
     maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Lax for development
+    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax', // Use lax for better compatibility
     path: '/',
+    domain: process.env.NODE_ENV === 'production' ? '.my-cool.space' : undefined, // Allow subdomain sharing in production
   },
   name: 'mycoolspace.sid', // Custom session cookie name
   proxy: process.env.NODE_ENV === 'production', // Trust proxy for secure cookies
@@ -276,11 +277,16 @@ app.get('/dashboard', (req, res) => {
   console.log('🏠 [DASHBOARD] - Session exists:', !!req.session);
   console.log('🏠 [DASHBOARD] - Session ID:', req.sessionID);
   console.log('🏠 [DASHBOARD] - Session user:', req.session?.user?.username || 'none');
+  console.log('🏠 [DASHBOARD] - Full session data:', JSON.stringify(req.session, null, 2));
+  console.log('🏠 [DASHBOARD] - Cookies:', req.headers.cookie);
   
   if (!req.session.user) {
     console.log('🏠 [DASHBOARD] User not authenticated, redirecting to home');
     logUserAction(null, 'dashboard_access_denied', { 
       reason: 'not_authenticated',
+      sessionId: req.sessionID,
+      hasSession: !!req.session,
+      cookies: req.headers.cookie,
       ip: req.ip,
       userAgent: req.get('User-Agent')
     });
@@ -289,6 +295,7 @@ app.get('/dashboard', (req, res) => {
   
   console.log('🏠 [DASHBOARD] Authenticated user accessing dashboard:', req.session.user.username);
   logUserAction(req.session.user, 'dashboard_access', { 
+    sessionId: req.sessionID,
     ip: req.ip,
     userAgent: req.get('User-Agent')
   });
@@ -570,7 +577,8 @@ app.get('/auth/discord/callback', async (req, res) => {
     console.log('🔐 [AUTH] User session created:', {
       username: req.session.user.username,
       email: req.session.user.email,
-      isNewUser: isNewUser
+      isNewUser: isNewUser,
+      sessionId: req.sessionID
     });
     console.log('🔐 [AUTH] Session ID:', req.sessionID);
     
@@ -581,22 +589,32 @@ app.get('/auth/discord/callback', async (req, res) => {
       userAgent: req.get('User-Agent')
     });
     
-    // Force session save before redirect
+    // Force session save before redirect with additional debugging
+    console.log('🔐 [AUTH] Forcing session save...');
     req.session.save((err) => {
       if (err) {
         console.error('🔐 [AUTH] Session save error:', err);
         logUserAction(req.session.user, 'session_save_failed', { 
           error: err.message,
+          sessionId: req.sessionID,
           ip: req.ip
         });
         return res.status(500).send('Session save failed');
       }
-      console.log('🔐 [AUTH] Session saved successfully, redirecting to dashboard');
+      console.log('🔐 [AUTH] Session saved successfully');
+      console.log('🔐 [AUTH] Final session ID before redirect:', req.sessionID);
+      console.log('🔐 [AUTH] Session user before redirect:', req.session.user?.username);
+      
       logUserAction(req.session.user, 'login_complete', { 
         redirectTo: '/dashboard',
+        finalSessionId: req.sessionID,
         ip: req.ip
       });
-      res.redirect('/dashboard');
+      
+      // Add a small delay to ensure session is fully saved
+      setTimeout(() => {
+        res.redirect('/dashboard');
+      }, 100);
     });
     
   } catch (error) {

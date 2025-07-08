@@ -94,6 +94,9 @@ NODE_ENV=development
 PORT=3000
 SESSION_SECRET=your-secure-session-secret
 
+# Session debugging (for development only)
+DISABLE_HTTPS=true  # Set to true if testing locally without HTTPS
+
 # Appwrite
 APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
 APPWRITE_PROJECT_ID=your-project-id
@@ -111,6 +114,16 @@ PORKBUN_API_KEY=your-porkbun-api-key
 PORKBUN_SECRET_KEY=your-porkbun-secret-key
 BASE_DOMAIN=your-domain.com
 ```
+
+### Important Notes
+
+**Session Configuration**: The application uses session-based authentication. If you experience login issues where users are redirected back to the home page after successful Discord OAuth:
+
+1. **For local development**: Set `DISABLE_HTTPS=true` in your `.env` file
+2. **For production**: Ensure your application is served over HTTPS
+3. **Session storage**: The default memory store is not suitable for production. Consider using Redis or another persistent session store.
+
+**Discord OAuth Redirect URI**: Make sure the redirect URI in your Discord application settings exactly matches the one in your `.env` file.
 
 ### Discord OAuth Setup
 
@@ -224,6 +237,37 @@ npm audit          # Check for security vulnerabilities
 npm audit:fix      # Automatically fix security issues
 ```
 
+## Troubleshooting
+
+### Common Issues
+
+**1. Session/Login Problems**
+If users are redirected to the home page after successful Discord OAuth:
+
+- **Check environment variables**: Ensure `SESSION_SECRET` is set to a secure random string
+- **HTTPS configuration**: For production, ensure the app is served over HTTPS. For local development, set `DISABLE_HTTPS=true`
+- **Cookie domain**: Verify the domain configuration matches your deployment
+- **Session store**: The default memory store doesn't persist across restarts. Use Redis for production.
+
+**2. Discord OAuth Issues**
+- **Redirect URI mismatch**: Ensure the redirect URI in your Discord app settings exactly matches your `.env` configuration
+- **Client credentials**: Verify `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET` are correct
+- **Scopes**: The application requires `identify` and `email` scopes
+
+**3. DNS/Subdomain Creation Failures**
+- **Porkbun API credentials**: Verify your API key and secret are correct and have the necessary permissions
+- **Domain configuration**: Ensure your domain's nameservers are set to Porkbun's servers
+- **Rate limiting**: Check if you're hitting Porkbun's API rate limits
+
+**4. Database Connection Issues**
+- **Appwrite configuration**: Verify all Appwrite environment variables are correct
+- **Collection setup**: Ensure all required collections exist in your Appwrite database
+- **API key permissions**: Verify your Appwrite API key has the necessary permissions
+
+### Debug Mode
+
+To enable additional debugging output, you can check the server logs for detailed session and authentication information.
+
 ## License
 
 **All Rights Reserved**
@@ -242,13 +286,10 @@ This software and associated documentation files (the "Software") are proprietar
 **Disclaimer:**
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-For permissions beyond the scope of this license, please contact: legal@my-cool.space
-
 ## Support
 
-- **Documentation**: Check the `/docs` folder for detailed guides
 - **Issues**: Report bugs via [GitHub Issues](https://github.com/my-cool-space/my-cool-dot-space/issues)
-- **Email**: Contact us at support@my-cool.space
+
 
 ## Roadmap
 
