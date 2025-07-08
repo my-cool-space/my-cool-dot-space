@@ -11,7 +11,7 @@
     <title><%= title %></title>
     <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+    <script src="https://js.hcaptcha.com/1/api.js?onload=onHCaptchaLoaded&render=explicit" async defer></script>
     <script src="/appwrite-auth.js"></script>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/discord-auth.js"></script>
@@ -157,7 +157,7 @@
                                     <label class="text-[#110e1b] text-sm font-medium leading-normal">
                                         Security Verification *
                                     </label>
-                                    <div class="h-captcha" data-sitekey="<%= hcaptchaSiteKey %>"></div>
+                                    <div id="hcaptcha-container"></div>
                                     <p class="text-[#604e97] text-xs font-normal leading-normal">
                                         Please complete the security verification to prevent automated abuse.
                                     </p>
@@ -229,18 +229,36 @@
 
     <script>
         let maxSubdomains = 1; // Default, will be updated from server
+        let hcaptchaWidgetId = null;
+        const HCAPTCHA_SITE_KEY = '<%= hcaptchaSiteKey %>';
+        
+        // Callback for when hCaptcha is loaded
+        window.onHCaptchaLoaded = function() {
+            console.log('hCaptcha API loaded successfully');
+            console.log('Site key:', HCAPTCHA_SITE_KEY);
+            
+            // Render hCaptcha widget
+            try {
+                hcaptchaWidgetId = hcaptcha.render('hcaptcha-container', {
+                    sitekey: HCAPTCHA_SITE_KEY,
+                    size: 'normal',
+                    theme: 'light'
+                });
+                console.log('hCaptcha widget rendered with ID:', hcaptchaWidgetId);
+            } catch (error) {
+                console.error('Error rendering hCaptcha:', error);
+            }
+        };
         
         // Debug: Check if hCaptcha loaded
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Dashboard loaded for user');
             console.log('hCaptcha available:', typeof hcaptcha !== 'undefined');
+            console.log('hCaptcha site key:', HCAPTCHA_SITE_KEY);
             
-            // Check if hCaptcha widget is present
-            const hcaptchaWidget = document.querySelector('.h-captcha');
-            console.log('hCaptcha widget found:', !!hcaptchaWidget);
-            if (hcaptchaWidget) {
-                console.log('hCaptcha site key:', hcaptchaWidget.getAttribute('data-sitekey'));
-            }
+            // Check if hCaptcha container is present
+            const hcaptchaContainer = document.getElementById('hcaptcha-container');
+            console.log('hCaptcha container found:', !!hcaptchaContainer);
             
             // Load admin settings first, then set up dashboard
             loadAdminSettings().then(() => {
@@ -330,7 +348,15 @@
                 const data = Object.fromEntries(formData);
                 
                 // Get hCaptcha response
-                const hcaptchaResponse = hcaptcha.getResponse();
+                let hcaptchaResponse = null;
+                if (hcaptchaWidgetId !== null && typeof hcaptcha !== 'undefined') {
+                    try {
+                        hcaptchaResponse = hcaptcha.getResponse(hcaptchaWidgetId);
+                    } catch (error) {
+                        console.error('Error getting hCaptcha response:', error);
+                    }
+                }
+                
                 if (!hcaptchaResponse) {
                     document.getElementById('errorMessage').textContent = 'Please complete the security verification.';
                     document.getElementById('error').classList.remove('hidden');
@@ -360,7 +386,9 @@
                     if (response.ok) {
                         document.getElementById('success').classList.remove('hidden');
                         form.reset();
-                        hcaptcha.reset(); // Reset hCaptcha
+                        if (hcaptchaWidgetId !== null && typeof hcaptcha !== 'undefined') {
+                            hcaptcha.reset(hcaptchaWidgetId); // Reset hCaptcha
+                        }
                         loadMyRequests(); // Refresh the requests list
                     } else {
                         throw new Error(result.error || 'Unknown error');
@@ -379,7 +407,9 @@
                 } finally {
                     document.getElementById('loading').classList.add('hidden');
                     form.classList.remove('hidden');
-                    hcaptcha.reset(); // Reset hCaptcha on error
+                    if (hcaptchaWidgetId !== null && typeof hcaptcha !== 'undefined') {
+                        hcaptcha.reset(hcaptchaWidgetId); // Reset hCaptcha on error
+                    }
                 }
             });
 

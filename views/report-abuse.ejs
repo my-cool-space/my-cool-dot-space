@@ -11,7 +11,7 @@
     <title>Report Abuse - my-cool.space</title>
     <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+    <script src="https://js.hcaptcha.com/1/api.js?onload=onHCaptchaLoaded&render=explicit" async defer></script>
 </head>
 <body>
     <div class="relative flex size-full min-h-screen flex-col bg-[#f9f8fc] group/design-root overflow-x-hidden" style='font-family: Inter, "Noto Sans", sans-serif;'>
@@ -160,7 +160,7 @@
                                     <label class="text-[#110e1b] text-sm font-medium">
                                         Security Verification *
                                     </label>
-                                    <div class="h-captcha" data-sitekey="<%= hcaptchaSiteKey %>"></div>
+                                    <div id="hcaptcha-container"></div>
                                     <p class="text-xs text-[#604e97]">
                                         Please complete the security verification to prevent automated spam.
                                     </p>
@@ -210,6 +210,24 @@
     </div>
 
     <script>
+        let reportWidgetId = null;
+
+        // Callback function when hCaptcha API is loaded
+        function onHCaptchaLoaded() {
+            console.log('hCaptcha API loaded for report abuse form');
+            try {
+                reportWidgetId = hcaptcha.render('hcaptcha-container', {
+                    sitekey: '<%= hcaptchaSiteKey %>',
+                    callback: function(token) {
+                        console.log('hCaptcha completed for report form:', token);
+                    }
+                });
+                console.log('hCaptcha widget rendered with ID:', reportWidgetId);
+            } catch (error) {
+                console.error('Error rendering hCaptcha widget:', error);
+            }
+        }
+
         document.getElementById('abuseReportForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -217,7 +235,11 @@
             const messageContainer = document.getElementById('messageContainer');
             
             // Get hCaptcha response
-            const hcaptchaResponse = hcaptcha.getResponse();
+            let hcaptchaResponse = null;
+            if (reportWidgetId !== null) {
+                hcaptchaResponse = hcaptcha.getResponse(reportWidgetId);
+            }
+            
             if (!hcaptchaResponse) {
                 messageContainer.className = 'rounded-lg border border-red-200 bg-red-50 p-4';
                 messageContainer.innerHTML = `
@@ -261,7 +283,9 @@
                     
                     // Reset form
                     this.reset();
-                    hcaptcha.reset(); // Reset hCaptcha
+                    if (reportWidgetId !== null) {
+                        hcaptcha.reset(reportWidgetId);
+                    }
                 } else {
                     // Error
                     messageContainer.className = 'rounded-lg border border-red-200 bg-red-50 p-4';
@@ -269,6 +293,9 @@
                         <h3 class="text-sm font-medium text-red-800 mb-2">❌ Error</h3>
                         <p class="text-sm text-red-700">${result.error || 'Failed to submit report. Please try again.'}</p>
                     `;
+                    if (reportWidgetId !== null) {
+                        hcaptcha.reset(reportWidgetId);
+                    }
                 }
                 
                 messageContainer.classList.remove('hidden');
@@ -282,12 +309,14 @@
                     <p class="text-sm text-red-700">Failed to connect to server. Please check your internet connection and try again.</p>
                 `;
                 messageContainer.classList.remove('hidden');
+                if (reportWidgetId !== null) {
+                    hcaptcha.reset(reportWidgetId);
+                }
             }
             
             // Re-enable submit button
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<span class="truncate">Submit Report</span>';
-            hcaptcha.reset(); // Reset hCaptcha after submission attempt
         });
     </script>
 </body>
