@@ -268,6 +268,16 @@ If users are redirected to the home page after successful Discord OAuth:
 
 To enable additional debugging output, you can check the server logs for detailed session and authentication information.
 
+### Session Persistence in Production
+
+**Important**: The default MemoryStore session configuration is not suitable for production as it will leak memory and not scale past a single process. For production deployments, consider using a persistent session store like Redis:
+
+```bash
+npm install connect-redis redis
+```
+
+Then modify the session configuration in `app.js` to use Redis instead of the default memory store.
+
 ## License
 
 **All Rights Reserved**

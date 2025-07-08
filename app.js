@@ -219,6 +219,13 @@ app.use(session({
   proxy: process.env.NODE_ENV === 'production', // Trust proxy for secure cookies
 }));
 
+// Production session store warning
+if (process.env.NODE_ENV === 'production') {
+  console.warn('⚠️  [SESSION] WARNING: Using MemoryStore in production is not recommended!');
+  console.warn('⚠️  [SESSION] Consider using Redis or another persistent session store for production.');
+  console.warn('⚠️  [SESSION] Sessions will be lost when the server restarts.');
+}
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // View engine
@@ -499,13 +506,19 @@ app.get('/auth/discord/callback', async (req, res) => {
         await users.updatePrefs(user.id, {
           ...currentPrefs,
           last_login: new Date().toISOString(),
+          last_login_ip: req.ip,
           login_count: (currentPrefs.login_count || 0) + 1,
           discord_username: user.username,
           discord_discriminator: user.discriminator || '0',
           discord_avatar: user.avatar,
-          discord_verified: user.verified
+          discord_verified: user.verified,
+          // Track IP addresses for security and abuse prevention
+          recent_ips: [
+            req.ip,
+            ...(currentPrefs.recent_ips || []).filter(ip => ip !== req.ip).slice(0, 4)
+          ]
         });
-        console.log('🔐 [AUTH] Updated user preferences with last login');
+        console.log('🔐 [AUTH] Updated user preferences with last login and IP tracking');
       } catch (prefsError) {
         console.warn('🔐 [AUTH] Failed to update user preferences:', prefsError.message);
       }
@@ -546,9 +559,14 @@ app.get('/auth/discord/callback', async (req, res) => {
           discord_verified: user.verified,
           created_via: 'discord_oauth',
           created_at: new Date().toISOString(),
+          created_ip: req.ip,
           first_login: new Date().toISOString(),
+          first_login_ip: req.ip,
           last_login: new Date().toISOString(),
-          login_count: 1
+          last_login_ip: req.ip,
+          login_count: 1,
+          // Track IP addresses for security and abuse prevention
+          recent_ips: [req.ip]
         });
         
         console.log('🔐 [AUTH] Created new Appwrite user:', appwriteUser.name);
@@ -2725,12 +2743,24 @@ app.get('/api/admin/requests', async (req, res) => {
 
 app.get('/api/my-requests', async (req, res) => {
   console.log('=== GET /api/my-requests ===');
-  console.log('Session user:', req.session.user);
+  console.log('Session exists:', !!req.session);
+  console.log('Session ID:', req.sessionID);
+  console.log('Session user:', req.session?.user?.username || 'undefined');
+  console.log('Full session:', JSON.stringify(req.session, null, 2));
+  console.log('Cookies:', req.headers.cookie);
   
   try {
     // Check if user is authenticated
-    if (!req.session.user) {
+    if (!req.session || !req.session.user) {
       console.error('Authentication failed: no user in session');
+      logUserAction(null, 'api_access_denied', { 
+        endpoint: '/api/my-requests',
+        reason: 'not_authenticated',
+        sessionExists: !!req.session,
+        sessionId: req.sessionID,
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      });
       return res.status(401).json({ error: 'Not authenticated - please log in' });
     }
 
@@ -2740,6 +2770,14 @@ app.get('/api/my-requests', async (req, res) => {
     
     const userId = req.session.user.id;
     console.log('Querying database for user requests, userId:', userId);
+    
+    // Log API access
+    logUserAction(req.session.user, 'api_my_requests_access', { 
+      userId: userId,
+      sessionId: req.sessionID,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
     
     try {
       const requests = await databases.listDocuments(
