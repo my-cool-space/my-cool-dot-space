@@ -356,7 +356,7 @@ app.get('/dashboard', (req, res) => {
   res.render('dashboard', { 
     title: 'Dashboard - my-cool.space',
     user: req.session.user,
-    process: { env: { HCAPTCHA_SITE_KEY: process.env.HCAPTCHA_SITE_KEY } }
+    hcaptchaSiteKey: process.env.HCAPTCHA_SITE_KEY || '10000000-ffff-ffff-ffff-000000000001'
   });
 });
 
@@ -435,7 +435,7 @@ app.get('/report-abuse', (req, res) => {
   res.render('report-abuse', { 
     title: 'Report Abuse - my-cool.space',
     user: req.session.user || null,
-    process: { env: { HCAPTCHA_SITE_KEY: process.env.HCAPTCHA_SITE_KEY } }
+    hcaptchaSiteKey: process.env.HCAPTCHA_SITE_KEY || '10000000-ffff-ffff-ffff-000000000001'
   });
 });
 

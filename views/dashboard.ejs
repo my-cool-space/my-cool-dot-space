@@ -1,8 +1,4 @@
-<!DOCTYPE     <title><%= title %></title>
-    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
-    <script src="/appwrite-auth.js"></script>>
+<!DOCTYPE html>
 <html>
 <head>
     <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="" />
@@ -14,6 +10,9 @@
     />
     <title><%= title %></title>
     <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+    <script src="/appwrite-auth.js"></script>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/discord-auth.js"></script>
 </head>
@@ -158,7 +157,7 @@
                                     <label class="text-[#110e1b] text-sm font-medium leading-normal">
                                         Security Verification *
                                     </label>
-                                    <div class="h-captcha" data-sitekey="<%= process.env.HCAPTCHA_SITE_KEY || '10000000-ffff-ffff-ffff-000000000001' %>"></div>
+                                    <div class="h-captcha" data-sitekey="<%= hcaptchaSiteKey %>"></div>
                                     <p class="text-[#604e97] text-xs font-normal leading-normal">
                                         Please complete the security verification to prevent automated abuse.
                                     </p>
@@ -231,9 +230,17 @@
     <script>
         let maxSubdomains = 1; // Default, will be updated from server
         
-        // Simple dashboard setup - no complex auth checking needed
+        // Debug: Check if hCaptcha loaded
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Dashboard loaded for user');
+            console.log('hCaptcha available:', typeof hcaptcha !== 'undefined');
+            
+            // Check if hCaptcha widget is present
+            const hcaptchaWidget = document.querySelector('.h-captcha');
+            console.log('hCaptcha widget found:', !!hcaptchaWidget);
+            if (hcaptchaWidget) {
+                console.log('hCaptcha site key:', hcaptchaWidget.getAttribute('data-sitekey'));
+            }
             
             // Load admin settings first, then set up dashboard
             loadAdminSettings().then(() => {
