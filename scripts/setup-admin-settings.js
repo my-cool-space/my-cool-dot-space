@@ -115,5 +115,150 @@ async function setupAdminSettings() {
     }
 }
 
+async function setupAlertsCollection() {
+    console.log('🔧 Setting up Alerts Collection...');
+    
+    // Initialize Appwrite client
+    const client = new Client();
+    client
+        .setEndpoint(process.env.APPWRITE_ENDPOINT)
+        .setProject(process.env.APPWRITE_PROJECT_ID)
+        .setKey(process.env.APPWRITE_API_KEY);
+    
+    const databases = new Databases(client);
+    
+    try {
+        const collectionId = process.env.APPWRITE_ALERTS_COLLECTION_ID || 'alerts';
+        
+        try {
+            const existingCollection = await databases.getCollection(
+                process.env.APPWRITE_DATABASE_ID,
+                collectionId
+            );
+            console.log('✅ Alerts collection already exists:', existingCollection.name);
+            return;
+        } catch (error) {
+            if (error.code !== 404) {
+                throw error;
+            }
+        }
+        
+        console.log('📝 Creating alerts collection...');
+        
+        const collection = await databases.createCollection(
+            process.env.APPWRITE_DATABASE_ID,
+            collectionId,
+            'Alerts'
+        );
+        
+        console.log('✅ Collection created:', collection.name);
+        
+        console.log('📝 Creating attributes for alerts...');
+        
+        await databases.createStringAttribute(
+            process.env.APPWRITE_DATABASE_ID,
+            collectionId,
+            'title',
+            255,
+            true
+        );
+        console.log('✅ Created title attribute');
+        
+        await databases.createStringAttribute(
+            process.env.APPWRITE_DATABASE_ID,
+            collectionId,
+            'message',
+            1000,
+            true
+        );
+        console.log('✅ Created message attribute');
+        
+        await databases.createStringAttribute(
+            process.env.APPWRITE_DATABASE_ID,
+            collectionId,
+            'url',
+            2048,
+            false
+        );
+        console.log('✅ Created url attribute');
+        
+        await databases.createStringAttribute(
+            process.env.APPWRITE_DATABASE_ID,
+            collectionId,
+            'subdomain',
+            255,
+            false
+        );
+        console.log('✅ Created subdomain attribute');
+        
+        await databases.createStringAttribute(
+            process.env.APPWRITE_DATABASE_ID,
+            collectionId,
+            'status',
+            50,
+            true, // required
+            false, // isArray
+            'pending', // defaultValue
+            false, // isEncrypted
+            ['approved', 'pending', 'rejected'] // elements (enum)
+        );
+        console.log('✅ Created status attribute');
+        
+        await databases.createDatetimeAttribute(
+            process.env.APPWRITE_DATABASE_ID,
+            collectionId,
+            'created_at',
+            true
+        );
+        console.log('✅ Created created_at attribute');
+        
+        await databases.createStringAttribute(
+            process.env.APPWRITE_DATABASE_ID,
+            collectionId,
+            'created_by',
+            255,
+            true
+        );
+        console.log('✅ Created created_by attribute');
+
+        await databases.createDatetimeAttribute(
+            process.env.APPWRITE_DATABASE_ID,
+            collectionId,
+            'reviewed_at',
+            false
+        );
+        console.log('✅ Created reviewed_at attribute');
+
+        await databases.createStringAttribute(
+            process.env.APPWRITE_DATABASE_ID,
+            collectionId,
+            'reviewed_by',
+            255,
+            false
+        );
+        console.log('✅ Created reviewed_by attribute');
+
+        await databases.createStringAttribute(
+            process.env.APPWRITE_DATABASE_ID,
+            collectionId,
+            'rejection_reason',
+            1000,
+            false
+        );
+        console.log('✅ Created rejection_reason attribute');
+        
+        console.log('🎉 Alerts collection setup complete!');
+        console.log(`📋 Collection ID: ${collectionId}`);
+        console.log('💡 Make sure to set APPWRITE_ALERTS_COLLECTION_ID in your .env file if different from "alerts"');
+        
+    } catch (error) {
+        console.error('❌ Error setting up alerts collection:', error.message);
+        process.exit(1);
+    }
+}
+
 // Run the setup
-setupAdminSettings();
+(async () => {
+    await setupAdminSettings();
+    await setupAlertsCollection();
+})();

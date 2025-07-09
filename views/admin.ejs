@@ -110,6 +110,13 @@
                         >
                             Settings
                         </button>
+                        <button 
+                            id="alertsTab" 
+                            class="tab-button px-4 py-2 border-b-2 border-transparent text-[#604e97] font-medium text-sm ml-4 transition-all duration-200 hover:bg-gray-50 active:scale-95"
+                            onclick="switchTab('alerts')"
+                        >
+                            Alerts
+                        </button>
                     </div>
 
                     <!-- Subdomain Management Tab -->
@@ -565,6 +572,65 @@
                             </div>
                         </div>
                     </div> <!-- End settings content -->
+
+                    <!-- Alerts Tab -->
+                    <div id="alertsContent" class="tab-content" style="display: none;">
+                        <div class="flex flex-col gap-6 p-4">
+                            <h2 class="text-[#110e1b] text-[22px] font-bold leading-tight tracking-[-0.015em]">Manage Alerts</h2>
+                            
+                            <!-- Create New Alert Form -->
+                            <div class="bg-white border border-gray-200 rounded-lg p-6">
+                                <h3 class="text-lg font-bold text-gray-900 mb-4">Create New Alert</h3>
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label for="alertTitle" class="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                                        <input type="text" id="alertTitle" class="w-full p-2 border border-gray-300 rounded-md" placeholder="e.g., Maintenance Scheduled">
+                                    </div>
+                                    <div>
+                                        <label for="alertMessage" class="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                                        <textarea id="alertMessage" rows="3" class="w-full p-2 border border-gray-300 rounded-md" placeholder="e.g., We will be performing scheduled maintenance..."></textarea>
+                                    </div>
+                                    <div>
+                                        <label for="alertUrl" class="block text-sm font-medium text-gray-700 mb-2">Associated URL (Optional)</label>
+                                        <input type="url" id="alertUrl" class="w-full p-2 border border-gray-300 rounded-md" placeholder="e.g., https://status.my-cool.space">
+                                    </div>
+                                    <div>
+                                        <label for="alertSubdomain" class="block text-sm font-medium text-gray-700 mb-2">Associated Subdomain (Optional)</label>
+                                        <input type="text" id="alertSubdomain" class="w-full p-2 border border-gray-300 rounded-md" placeholder="e.g., maintenance.my-cool.space">
+                                    </div>
+                                </div>
+                                <button onclick="createAlert()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                                    Create Alert
+                                </button>
+                            </div>
+
+                            <!-- Existing Alerts List -->
+                            <div class="bg-white border border-gray-200 rounded-lg p-6">
+                                <h3 class="text-lg font-bold text-gray-900 mb-4">Existing Alerts</h3>
+                                <div id="alertsList" class="overflow-x-auto">
+                                    <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">URL/Subdomain</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="alerts-tbody">
+                                            <tr>
+                                                <td colspan="6" class="text-center py-8">
+                                                    <p class="text-[#604e97] text-base font-normal leading-normal">Loading alerts...</p>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- End alerts content -->
                 </div>
             </div>
         </div>
@@ -685,6 +751,8 @@
                 loadLogs();
             } else if (tab === 'settings') {
                 loadSettings();
+            } else if (tab === 'alerts') {
+                loadAlerts();
             }
         }
 
@@ -1779,6 +1847,7 @@ ${request.denial_reason ? `Denial Reason: ${request.denial_reason}` : ''}`);
                 loadUsers();
                 loadDeletionRequests();
                 loadSettings();
+                loadAlerts();
                 
                 // If the Discord auth script loaded user info, display it
                 const userNameElement = document.querySelector('.user-name');
@@ -1913,6 +1982,189 @@ ${request.denial_reason ? `Denial Reason: ${request.denial_reason}` : ''}`);
                 }
             } catch (error) {
                 console.error('Error loading maintenance status:', error);
+            }
+        }
+
+        // Alerts Functions
+        let allAlerts = [];
+
+        async function loadAlerts() {
+            try {
+                const response = await fetch('/api/admin/alerts', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    allAlerts = data.alerts || [];
+                    renderAlerts();
+                } else {
+                    showNotification(data.error || 'Failed to load alerts', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading alerts:', error);
+                showNotification('Error loading alerts: ' + error.message, 'error');
+            }
+        }
+
+        async function createAlert() {
+            const title = document.getElementById('alertTitle').value;
+            const message = document.getElementById('alertMessage').value;
+            const url = document.getElementById('alertUrl').value;
+            const subdomain = document.getElementById('alertSubdomain').value;
+
+            if (!title || !message) {
+                showNotification('Title and Message are required for an alert.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/alerts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ title, message, url, subdomain })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification('Alert created successfully!', 'success');
+                    // Clear form
+                    document.getElementById('alertTitle').value = '';
+                    document.getElementById('alertMessage').value = '';
+                    document.getElementById('alertUrl').value = '';
+                    document.getElementById('alertSubdomain').value = '';
+                    loadAlerts(); // Refresh list
+                } else {
+                    showNotification(data.error || 'Failed to create alert', 'error');
+                }
+            } catch (error) {
+                console.error('Error creating alert:', error);
+                showNotification('Error creating alert: ' + error.message, 'error');
+            }
+        }
+
+        async function approveAlert(alertId) {
+            showConfirmation(
+                'Approve Alert',
+                'Are you sure you want to approve this alert? It will become visible on the dashboard.',
+                async () => {
+                    try {
+                        const response = await fetch(`/api/admin/alerts/${alertId}/approve`, {
+                            method: 'POST',
+                            credentials: 'include'
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            showNotification('Alert approved successfully!', 'success');
+                            loadAlerts();
+                        } else {
+                            showNotification(data.error || 'Failed to approve alert', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error approving alert:', error);
+                        showNotification('Error approving alert: ' + error.message, 'error');
+                    }
+                },
+                'Approve',
+                'green'
+            );
+        }
+
+        async function rejectAlert(alertId) {
+            showPrompt(
+                'Reject Alert',
+                'Enter reason for rejecting this alert (optional):',
+                async (reason) => {
+                    try {
+                        const response = await fetch(`/api/admin/alerts/${alertId}/reject`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            credentials: 'include',
+                            body: JSON.stringify({ reason })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            showNotification('Alert rejected successfully!', 'success');
+                            loadAlerts();
+                        } else {
+                            showNotification(data.error || 'Failed to reject alert', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error rejecting alert:', error);
+                        showNotification('Error rejecting alert: ' + error.message, 'error');
+                    }
+                }
+            );
+        }
+
+        function renderAlerts() {
+            const tbody = document.getElementById('alerts-tbody');
+            if (!tbody) return;
+
+            if (allAlerts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No alerts found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = allAlerts.map(alert => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                        <div class="font-medium">${escapeHtml(alert.title)}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="text-sm max-w-xs truncate" title="${escapeHtml(alert.message)}">
+                            ${escapeHtml(alert.message)}
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-500">
+                        ${alert.url ? `<a href="${escapeHtml(alert.url)}" target="_blank" class="text-blue-600 hover:underline">${escapeHtml(alert.url)}</a><br>` : ''}
+                        ${alert.subdomain ? `<span>${escapeHtml(alert.subdomain)}</span>` : ''}
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 text-xs rounded-full ${getAlertStatusColor(alert.status)}">
+                            ${alert.status}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-500">
+                        ${escapeHtml(alert.created_by)}<br>
+                        <span class="text-xs text-gray-400">${new Date(alert.created_at).toLocaleDateString()}</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex space-x-2">
+                            ${alert.status === 'pending' ? `
+                                <button onclick="approveAlert('${alert.$id}')" 
+                                        class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700">
+                                    Approve
+                                </button>
+                                <button onclick="rejectAlert('${alert.$id}')" 
+                                        class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700">
+                                    Reject
+                                </button>
+                            ` : ''}
+                            ${alert.status === 'approved' ? `
+                                <button onclick="rejectAlert('${alert.$id}')" 
+                                        class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700">
+                                    Deactivate
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getAlertStatusColor(status) {
+            switch(status) {
+                case 'pending': return 'bg-yellow-100 text-yellow-800';
+                case 'approved': return 'bg-green-100 text-green-800';
+                case 'rejected': return 'bg-red-100 text-red-800';
+                default: return 'bg-gray-100 text-gray-800';
             }
         }
 

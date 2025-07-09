@@ -4,10 +4,46 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const session = require('express-session');
 const rateLimit = require('express-rate-limit');
+const fs = require('fs').promises; // For reading files
+const ADMIN_SETTINGS_FILE = path.join(__dirname, 'admin-settings.json'); // Path for admin settings JSON fallback
 require('dotenv').config();
 
 const appwriteClient = require('./src/appwrite');
 const DiscordOAuth = require('./src/discord-oauth');
+
+// Global variable to store bad words
+let badWords = [];
+
+// Function to load bad words from file
+async function loadBadWords() {
+  try {
+    const data = await fs.readFile(path.join(__dirname, 'badwords.txt'), 'utf8');
+    badWords = data.split('\n').map(word => word.trim()).filter(word => word.length > 0);
+    console.log(`Loaded ${badWords.length} bad words.`);
+  } catch (error) {
+    console.error('Failed to load bad words from badwords.txt:', error.message);
+  }
+}
+
+// Load bad words on startup
+loadBadWords();
+
+// Function to check for bad words
+function checkModeration(text) {
+  if (!text) return false;
+  const lowerText = text.toLowerCase();
+  for (const word of badWords) {
+    // Use regex for whole word matching to avoid partial matches (e.g., "ass" in "passage")
+    // Escape special characters in the bad word for regex
+    const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\// Load bad words on startup
+loadBadWords();');
+    const regex = new RegExp(`\\b${escapedWord}\\b`, 'i'); // 'i' for case-insensitive
+    if (regex.test(lowerText)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 // hCaptcha verification function
 async function verifyHCaptcha(token) {
@@ -77,48 +113,63 @@ async function loadAdminSettings() {
         maintenanceMode: settingsDoc.maintenance_mode !== undefined ? settingsDoc.maintenance_mode : MAINTENANCE_MODE
       };
       global.MAINTENANCE_MODE = ADMIN_SETTINGS.maintenanceMode;
-      console.log('✅ Admin settings loaded:', ADMIN_SETTINGS);
+      console.log('✅ Admin settings loaded from database:', ADMIN_SETTINGS);
     } else {
-      console.log('No admin settings found in database, using defaults');
-      // Create default settings document
-      await saveAdminSettingsToDatabase();
+      console.log('No admin settings found in database, attempting to create default and save.');
+      await saveAdminSettings(); // Use the new save function
     }
   } catch (error) {
     console.warn('Failed to load admin settings from database:', error.message);
-    console.log('Using default admin settings');
+    console.log('Attempting to load from local file...');
+    try {
+      const data = await fs.readFile(ADMIN_SETTINGS_FILE, 'utf8');
+      const fileSettings = JSON.parse(data);
+      ADMIN_SETTINGS = {
+        maxSubdomains: fileSettings.maxSubdomains || 1,
+        domainName: fileSettings.domainName || 'my-cool.space',
+        autoApprove: fileSettings.autoApprove || false,
+        maintenanceMode: fileSettings.maintenanceMode !== undefined ? fileSettings.maintenanceMode : MAINTENANCE_MODE
+      };
+      global.MAINTENANCE_MODE = ADMIN_SETTINGS.maintenanceMode;
+      console.log('✅ Admin settings loaded from local file:', ADMIN_SETTINGS);
+    } catch (fileError) {
+      console.error('❌ Failed to load admin settings from local file:', fileError.message);
+      console.log('Using default admin settings.');
+      // ADMIN_SETTINGS already has defaults, just ensure global.MAINTENANCE_MODE is set
+      global.MAINTENANCE_MODE = ADMIN_SETTINGS.maintenanceMode;
+    }
   }
 }
 
 // Save admin settings to database
-async function saveAdminSettingsToDatabase() {
+// Save admin settings to database or local file
+async function saveAdminSettings() {
+  const settingsData = {
+    max_subdomains: ADMIN_SETTINGS.maxSubdomains,
+    domain_name: ADMIN_SETTINGS.domainName,
+    auto_approve: ADMIN_SETTINGS.autoApprove,
+    maintenance_mode: ADMIN_SETTINGS.maintenanceMode,
+    updated_at: new Date().toISOString()
+  };
+
   try {
     const { Databases } = require('node-appwrite');
     const databases = new Databases(appwriteClient);
     
-    // First try to get existing settings
     const existingSettings = await databases.listDocuments(
       process.env.APPWRITE_DATABASE_ID,
       process.env.APPWRITE_SETTINGS_COLLECTION_ID || 'admin_settings'
     );
     
-    const settingsData = {
-      max_subdomains: ADMIN_SETTINGS.maxSubdomains,
-      domain_name: ADMIN_SETTINGS.domainName,
-      auto_approve: ADMIN_SETTINGS.autoApprove,
-      maintenance_mode: ADMIN_SETTINGS.maintenanceMode,
-      updated_at: new Date().toISOString()
-    };
-    
     if (existingSettings.documents.length > 0) {
-      // Update existing settings
       await databases.updateDocument(
         process.env.APPWRITE_DATABASE_ID,
         process.env.APPWRITE_SETTINGS_COLLECTION_ID || 'admin_settings',
         existingSettings.documents[0].$id,
         settingsData
       );
+      console.log('✅ Admin settings saved to database');
     } else {
-      // Create new settings document
       await databases.createDocument(
         process.env.APPWRITE_DATABASE_ID,
         process.env.APPWRITE_SETTINGS_COLLECTION_ID || 'admin_settings',
@@ -128,11 +179,17 @@ async function saveAdminSettingsToDatabase() {
           created_at: new Date().toISOString()
         }
       );
+      console.log('✅ Admin settings created in database');
     }
-    console.log('✅ Admin settings saved to database');
   } catch (error) {
-    console.error('Failed to save admin settings to database:', error);
-    throw error;
+    console.error('❌ Failed to save admin settings to database:', error.message);
+    console.log('Attempting to save to local file as fallback...');
+    try {
+      await fs.writeFile(ADMIN_SETTINGS_FILE, JSON.stringify(ADMIN_SETTINGS, null, 2), 'utf8');
+      console.log('✅ Admin settings saved to local file');
+    } catch (fileError) {
+      console.error('❌ Failed to save admin settings to local file:', fileError.message);
+    }
   }
 }
 
@@ -1138,6 +1195,190 @@ app.post('/api/admin/abuse-reports/:id/dismiss', async (req, res) => {
   }
 });
 
+// Admin API endpoints for alerts
+app.post('/api/admin/alerts', async (req, res) => {
+  console.log('=== POST /api/admin/alerts ===');
+
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  if (!(await isAdminUser(req.session.user))) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    const { title, message, url, subdomain } = req.body;
+
+    if (!title || !message) {
+      return res.status(400).json({ error: 'Title and message are required' });
+    }
+
+    let status = 'approved';
+    if (checkModeration(url) || checkModeration(subdomain)) {
+      status = 'pending';
+    }
+
+    const { Databases } = require('node-appwrite');
+    const databases = new Databases(appwriteClient);
+
+    const document = await databases.createDocument(
+      process.env.APPWRITE_DATABASE_ID,
+      process.env.APPWRITE_ALERTS_COLLECTION_ID || 'alerts',
+      'unique()',
+      {
+        title,
+        message,
+        url: url || '',
+        subdomain: subdomain || '',
+        status,
+        created_at: new Date().toISOString(),
+        created_by: req.session.user.username || req.session.user.global_name || 'Admin'
+      }
+    );
+
+    console.log('Alert created:', document.$id, 'Status:', status);
+    res.json({ success: true, alert: document });
+
+  } catch (error) {
+    console.error('Create alert error:', error);
+    res.status(500).json({ error: 'Failed to create alert' });
+  }
+});
+
+app.get('/api/alerts', async (req, res) => {
+  console.log('=== GET /api/alerts ===');
+
+  try {
+    const { Databases, Query } = require('node-appwrite');
+    const databases = new Databases(appwriteClient);
+
+    const response = await databases.listDocuments(
+      process.env.APPWRITE_DATABASE_ID,
+      process.env.APPWRITE_ALERTS_COLLECTION_ID || 'alerts',
+      [
+        Query.equal('status', 'approved'),
+        Query.orderDesc('created_at'),
+        Query.limit(10)
+      ]
+    );
+
+    res.json({ success: true, alerts: response.documents });
+
+  } catch (error) {
+    console.error('Get alerts error:', error);
+    res.status(500).json({ error: 'Failed to retrieve alerts' });
+  }
+});
+
+app.get('/api/admin/alerts', async (req, res) => {
+  console.log('=== GET /api/admin/alerts ===');
+
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  if (!(await isAdminUser(req.session.user))) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    const { Databases, Query } = require('node-appwrite');
+    const databases = new Databases(appwriteClient);
+
+    const response = await databases.listDocuments(
+      process.env.APPWRITE_DATABASE_ID,
+      process.env.APPWRITE_ALERTS_COLLECTION_ID || 'alerts',
+      [
+        Query.orderDesc('created_at'),
+        Query.limit(100)
+      ]
+    );
+
+    res.json({ success: true, alerts: response.documents });
+
+  } catch (error) {
+    console.error('Get admin alerts error:', error);
+    res.status(500).json({ error: 'Failed to retrieve admin alerts' });
+  }
+});
+
+app.post('/api/admin/alerts/:id/approve', async (req, res) => {
+  console.log('=== POST /api/admin/alerts/:id/approve ===');
+
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  if (!(await isAdminUser(req.session.user))) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    const alertId = req.params.id;
+
+    const { Databases } = require('node-appwrite');
+    const databases = new Databases(appwriteClient);
+
+    const updatedDocument = await databases.updateDocument(
+      process.env.APPWRITE_DATABASE_ID,
+      process.env.APPWRITE_ALERTS_COLLECTION_ID || 'alerts',
+      alertId,
+      {
+        status: 'approved',
+        reviewed_by: req.session.user.username || req.session.user.global_name || 'Admin',
+        reviewed_at: new Date().toISOString()
+      }
+    );
+
+    console.log('Alert approved:', alertId);
+    res.json({ success: true, alert: updatedDocument });
+
+  } catch (error) {
+    console.error('Approve alert error:', error);
+    res.status(500).json({ error: 'Failed to approve alert' });
+  }
+});
+
+app.post('/api/admin/alerts/:id/reject', async (req, res) => {
+  console.log('=== POST /api/admin/alerts/:id/reject ===');
+
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  if (!(await isAdminUser(req.session.user))) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    const alertId = req.params.id;
+    const { reason } = req.body;
+
+    const { Databases } = require('node-appwrite');
+    const databases = new Databases(appwriteClient);
+
+    const updatedDocument = await databases.updateDocument(
+      process.env.APPWRITE_DATABASE_ID,
+      process.env.APPWRITE_ALERTS_COLLECTION_ID || 'alerts',
+      alertId,
+      {
+        status: 'rejected',
+        reviewed_by: req.session.user.username || req.session.user.global_name || 'Admin',
+        reviewed_at: new Date().toISOString(),
+        rejection_reason: reason || ''
+      }
+    );
+
+    console.log('Alert rejected:', alertId);
+    res.json({ success: true, alert: updatedDocument });
+
+  } catch (error) {
+    console.error('Reject alert error:', error);
+    res.status(500).json({ error: 'Failed to reject alert' });
+  }
+});
+
 // User management endpoints
 app.get('/api/admin/users', async (req, res) => {
   console.log('=== GET /api/admin/users ===');
@@ -1796,7 +2037,7 @@ app.post('/api/admin/save-settings', async (req, res) => {
     console.log('Saving settings:', global.ADMIN_SETTINGS);
     
     // Save to database
-    await saveAdminSettingsToDatabase();
+    await saveAdminSettings();
     
     res.json({ 
       success: true, 
@@ -1858,7 +2099,7 @@ app.post('/api/admin/toggle-maintenance', async (req, res) => {
     });
     
     // Save to database
-    await saveAdminSettingsToDatabase();
+    await saveAdminSettings();
     
     res.json({ 
       success: true, 
@@ -2199,6 +2440,21 @@ app.post('/api/request-subdomain', subdomainLimiter, async (req, res) => {
       return res.status(500).json({ error: 'Failed to check existing subdomains' });
     }
     
+    // Determine initial status based on moderation check
+    let requestStatus = 'pending'; // Default to pending, will be approved if autoApprove is true and no bad words
+    let moderationFlagged = false;
+
+    if (checkModeration(subdomain) || checkModeration(targetUrl)) {
+      moderationFlagged = true;
+      console.log('🌐 [SUBDOMAIN] Request flagged for moderation due to bad words.');
+    }
+
+    // If auto-approve is enabled and not flagged by moderation, set status to approved
+    if (global.ADMIN_SETTINGS.autoApprove && !moderationFlagged) {
+      requestStatus = 'approved';
+      console.log('🌐 [SUBDOMAIN] Auto-approving request.');
+    }
+
     // Create subdomain request using session user data
     const prefixedTargetUrl = recordType ? `[${recordType}]${targetUrl}` : targetUrl;
     console.log('🌐 [SUBDOMAIN] Creating document with prefixed URL:', prefixedTargetUrl);
@@ -2213,7 +2469,7 @@ app.post('/api/request-subdomain', subdomainLimiter, async (req, res) => {
         discord_tag: user.username + '#' + user.discriminator,
         subdomain: subdomain,
         target_url: prefixedTargetUrl,
-        status: 'pending',
+        status: requestStatus,
         created_at: new Date().toISOString()
       }
     );

@@ -164,6 +164,7 @@ hCaptcha provides spam protection for domain requests and abuse reports:
    - `admin_settings` - For application configuration
    - `abuse_reports` - For abuse reporting system
    - `deletion_requests` - For GDPR data deletion requests
+   - `alerts` - For admin-sent alerts displayed on the dashboard
 
 ## Docker Deployment
 
