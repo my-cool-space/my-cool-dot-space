@@ -35,7 +35,7 @@ function checkModeration(text) {
   for (const word of badWords) {
     // Use regex for whole word matching to avoid partial matches (e.g., "ass" in "passage")
     // Escape special characters in the bad word for regex
-    const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\// Load bad words on startup
+    const escapedWord = word.replace(/[.*+?^${}()|[\\]/g, '\\const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\// Load bad words on startup');
 loadBadWords();');
     const regex = new RegExp(`\\b${escapedWord}\\b`, 'i'); // 'i' for case-insensitive
     if (regex.test(lowerText)) {
